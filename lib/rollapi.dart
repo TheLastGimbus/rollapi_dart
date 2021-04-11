@@ -73,6 +73,21 @@ class RateLimitException implements Exception {
   final DateTime limitReset;
 
   RateLimitException(this.message, {this.limitReset});
+
+  @override
+  String toString() => 'RateLimitException: $message | '
+      'Limit reset: ${limitReset?.toString() ?? 'unknown'}';
+}
+
+/// Represents that while the base URL is ping-able, the API backend is
+/// currently unavailable for some reason - for example, maintenance
+class ApiUnavailableException implements Exception {
+  final String message;
+
+  ApiUnavailableException({this.message});
+
+  @override
+  String toString() => 'ApiUnavailableException: $message';
 }
 
 /// Loop that checks for new states and handles the logic
@@ -154,7 +169,9 @@ Future<Request> makeRequest() async {
           )
         : null;
     throw RateLimitException(rollRes.body, limitReset: reset);
+  } else if (rollRes.statusCode == 502) {
+    throw ApiUnavailableException(message: rollRes.body);
   } else {
-    throw HttpException(rollRes.body, uri: url);
+    throw HttpException('${rollRes.statusCode} : ${rollRes.body}', uri: url);
   }
 }
