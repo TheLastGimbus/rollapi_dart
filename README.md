@@ -1,13 +1,15 @@
 # Roll-API Dart
 Dart library for Roll-API
 
+![Pub.dev shield](https://img.shields.io/pub/v/rollapi)
+
 ## What the hell is Roll-API??
 
 It's a super cool API that allows you to roll a **real dice** and get it's number!
 Check it out: [https://github.com/TheLastGimbus/Roll-API](https://github.com/TheLastGimbus/Roll-API)
 
 ## How to use
-1. `import-as`:
+1. Import:
 
    ```dart
    import 'package:rollapi/rollapi.dart' as roll;
