@@ -59,7 +59,7 @@ class Request {
   /// - RequestState.finished, int result
   /// - RequestState.expired and RequestState.failed, Exception e - can be:
   ///
-  ///     - HttpException - generic, something just went wrong, try again
+  ///     - ApiException - generic, something just went wrong, try again
   ///
   ///     - ApiUnavailableException - api unavailable, probably maintenance
   final Stream<MapEntry<RequestState, dynamic>> stateStream;
@@ -67,9 +67,20 @@ class Request {
   Request(this.uuid, this.stateStream);
 }
 
+/// Generic exception that something messed up with API
+class ApiException implements Exception {
+  final String message;
+
+  ApiException([this.message]);
+
+  @override
+  String toString() => 'ApiException: $message';
+}
+
 /// Represents that rate limit was exceeded and you need to wait to make
 /// new requests
-class RateLimitException implements Exception {
+class RateLimitException implements ApiException {
+  @override
   final String message;
 
   /// DateTime when limit will be reset and you can make new requests
@@ -84,10 +95,11 @@ class RateLimitException implements Exception {
 
 /// Represents that while the base URL is ping-able, the API backend is
 /// currently unavailable for some reason - for example, maintenance
-class ApiUnavailableException implements Exception {
+class ApiUnavailableException implements ApiException {
+  @override
   final String message;
 
-  ApiUnavailableException({this.message});
+  ApiUnavailableException([this.message]);
 
   @override
   String toString() => 'ApiUnavailableException: $message';
@@ -122,15 +134,14 @@ Stream<MapEntry<RequestState, dynamic>> _stateStream(String uuid) async* {
         yield MapEntry(
           RequestState.failed,
           infoRes.statusCode == 502
-              ? ApiUnavailableException(message: infoRes.body)
-              : HttpException(
-                  '${infoRes.statusCode} : ${infoRes.body}',
-                  uri: infoUrl,
-                ),
+              ? ApiUnavailableException(infoRes.body)
+              : ApiException(
+                  '$infoUrl : ${infoRes.statusCode} : ${infoRes.body}'),
         );
         return;
       }
     }
+    // At this point we know it was 200, so we can safely parse the body:
     json = jsonDecode(infoRes.body);
     final state = requestStateFromName(json['status']);
     if (waitingStates.contains(state)) {
@@ -144,8 +155,7 @@ Stream<MapEntry<RequestState, dynamic>> _stateStream(String uuid) async* {
       // If it's already expired then something is not right :/
       yield MapEntry(
         state,
-        HttpException(
-            'Request was failed: ${infoRes.statusCode} : ${infoRes.body}'),
+        ApiException('${infoRes.statusCode} : ${infoRes.body}'),
       );
       return;
     } else {
@@ -181,9 +191,9 @@ Future<Request> makeRequest() async {
         : null;
     throw RateLimitException(rollRes.body, limitReset: reset);
   } else if (rollRes.statusCode == 502) {
-    throw ApiUnavailableException(message: rollRes.body);
+    throw ApiUnavailableException(rollRes.body);
   } else {
-    throw HttpException('${rollRes.statusCode} : ${rollRes.body}', uri: url);
+    throw ApiException('${rollRes.statusCode} : ${rollRes.body}');
   }
 }
 
@@ -199,6 +209,6 @@ Future<int> getSimpleResult() async {
   } else if (errorStates.contains(result.key)) {
     throw result.value;
   } else {
-    throw 'Request failed :( try again';
+    throw ApiException('Request failed :( try again');
   }
 }
