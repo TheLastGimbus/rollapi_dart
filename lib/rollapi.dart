@@ -1,9 +1,11 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:core';
+
 import 'package:http/http.dart' as http;
-import 'dart:async';
 
 import 'src/exceptions.dart';
+
 export 'src/exceptions.dart';
 
 /// Base URL where API lives - must end with the '/'
@@ -20,13 +22,13 @@ enum RequestState {
 }
 
 /// List of states which represent that request failed
-const List<RequestState> errorStates = [
+const List<RequestState> requestErrorStates = [
   RequestState.expired,
   RequestState.failed,
 ];
 
 /// List of states which represent that request is waiting
-const List<RequestState> waitingStates = [
+const List<RequestState> requestWaitingStates = [
   RequestState.running,
   RequestState.queued,
 ];
@@ -107,14 +109,14 @@ Stream<MapEntry<RequestState, dynamic>> _stateStream(String uuid) async* {
     // At this point we know it was 200, so we can safely parse the body:
     json = jsonDecode(infoRes.body);
     final state = requestStateFromName(json['status']);
-    if (waitingStates.contains(state)) {
+    if (requestWaitingStates.contains(state)) {
       // Normal flow - waiting for result
       // Update the eta - it may change during the waiting
       yield MapEntry(state, etaDateTime(json['eta'] as num));
     } else if (state == RequestState.finished) {
       yield MapEntry(RequestState.finished, json['result'] as int);
       return;
-    } else if (errorStates.contains(state)) {
+    } else if (requestErrorStates.contains(state)) {
       // If it's already expired then something is not right :/
       yield MapEntry(
         state,
@@ -169,7 +171,7 @@ Future<int> getSimpleResult() async {
   final result = await req.stateStream.last;
   if (result.key == RequestState.finished) {
     return result.value as int;
-  } else if (errorStates.contains(result.key)) {
+  } else if (requestErrorStates.contains(result.key)) {
     throw result.value;
   } else {
     throw ApiException('Request failed :( try again');
