@@ -5,49 +5,13 @@ import 'dart:core';
 import 'package:http/http.dart' as http;
 
 import 'src/exceptions.dart';
+import 'src/state.dart';
 
 export 'src/exceptions.dart';
+export 'src/state.dart';
 
 /// Base URL where API lives - must end with the '/'
 String API_BASE_URL = 'https://roll.lastgimbus.com/api/';
-
-/// State of the request.
-/// Whether it's already finished, or waiting in a queue, etc
-enum RequestState {
-  queued,
-  running,
-  expired,
-  finished,
-  failed,
-}
-
-/// List of states which represent that request failed
-const List<RequestState> requestErrorStates = [
-  RequestState.expired,
-  RequestState.failed,
-];
-
-/// List of states which represent that request is waiting
-const List<RequestState> requestWaitingStates = [
-  RequestState.running,
-  RequestState.queued,
-];
-
-// Private map for to/from string conversion
-const Map<RequestState, String> _stateMap = {
-  RequestState.queued: 'QUEUED',
-  RequestState.running: 'RUNNING',
-  RequestState.expired: 'EXPIRED',
-  RequestState.finished: 'FINISHED',
-  RequestState.failed: 'FAILED',
-};
-
-RequestState requestStateFromName(String string) =>
-    _stateMap.keys.firstWhere((e) => _stateMap[e] == string);
-
-extension on RequestState {
-  String toName() => _stateMap[this];
-}
 
 /// Class representing a single request. All properties are immutable, and
 /// new states are emitted by [stateStream]
