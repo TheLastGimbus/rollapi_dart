@@ -175,3 +175,17 @@ Future<Request> makeRequest() async {
     throw HttpException('${rollRes.statusCode} : ${rollRes.body}', uri: url);
   }
 }
+
+/// This is *simplest possible* helper function for those who don't want to
+/// mess with [stateStream] and [RequestStatus]
+///
+/// It either returns a number, or throws an Exception in the process. Simple.
+Future<int> getSimpleResult() async {
+  final req = await makeRequest();
+  final result = await req.stateStream.last;
+  if (result.key != RequestState.finished) {
+    throw 'Result failed - try again';
+  } else {
+    return result.value as int;
+  }
+}
