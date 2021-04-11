@@ -3,8 +3,6 @@ description: Dart library for Roll-API
 version: 1.0.0
 repository: https://github.com/TheLastGimbus/rollapi_dart
 homepage: https://roll.lastgimbus.com/
-authors:
-  - "@TheLastGimbus"
 issue_tracker: https://github.com/TheLastGimbus/rollapi_dart/issues
 
 environment:
