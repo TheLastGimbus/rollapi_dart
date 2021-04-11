@@ -10,8 +10,22 @@ import 'state.dart';
 /// Base URL where API lives - must end with the '/'
 String API_BASE_URL = 'https://roll.lastgimbus.com/api/';
 
-/// Loop that checks for new states and handles the logic
-Stream<MapEntry<RequestState, dynamic>> _stateStream(String uuid) async* {
+/// Stream of states for given [uuid] request. Can be useful for example for
+/// re-checking state after network loss. Otherwise just use [makeRequest]
+///
+/// Possible values:
+/// - RequestState.queued, DateTime eta
+/// - RequestState.running, DateTime eta
+/// - RequestState.finished, int result
+/// - RequestState.expired and RequestState.failed, Exception e - can be:
+///
+///     - ApiException - generic, something just went wrong, try again
+///
+///     - ApiUnavailableException - api unavailable, probably maintenance
+///
+/// This is used by [makeRequest], and is preferred implementation
+/// of [Request.stateStream]
+Stream<MapEntry<RequestState, dynamic>> stateStream(String uuid) async* {
   yield MapEntry(RequestState.queued, null);
   final infoUrl = Uri.parse('${API_BASE_URL}info/$uuid/');
 
@@ -80,13 +94,15 @@ Stream<MapEntry<RequestState, dynamic>> _stateStream(String uuid) async* {
 ///
 /// Throws [RateLimitException] if rate limit was exceeded and you need to wait
 /// to make new requests
-/// Throws an HttpException if it was failed
+/// Throws an [ApiUnavailableException] if API is currently unavailable
+///
+/// Uses [stateStream] under the hood
 Future<Request> makeRequest() async {
   final url = Uri.parse(API_BASE_URL + 'roll/');
   final rollRes = await http.get(url);
   if (rollRes.statusCode >= 200 && rollRes.statusCode < 300) {
     final uuid = rollRes.body;
-    return Request(uuid, _stateStream(uuid));
+    return Request(uuid, stateStream(uuid));
   } else if (rollRes.statusCode == 429) {
     final resetEp = rollRes.headers['x-ratelimit-reset'];
     final reset = resetEp != null
@@ -106,6 +122,8 @@ Future<Request> makeRequest() async {
 /// mess with [stateStream] and [RequestStatus]
 ///
 /// It either returns a number, or throws an Exception in the process. Simple.
+///
+/// Uses [makeRequest] under the hood
 Future<int> getSimpleResult() async {
   final req = await makeRequest();
   final result = await req.stateStream.last;
