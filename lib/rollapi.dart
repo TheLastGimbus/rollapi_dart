@@ -8,6 +8,8 @@ import 'dart:async';
 /// Base URL where API lives - must end with the '/'
 String API_BASE_URL = 'https://roll.lastgimbus.com/api/';
 
+/// State of the request.
+/// Whether it's already finished, or waiting in a queue, etc
 enum RequestState {
   queued,
   running,
@@ -16,9 +18,19 @@ enum RequestState {
   failed,
 }
 
-List<RequestState> errorStates = [RequestState.expired, RequestState.failed];
-List<RequestState> waitingStates = [RequestState.running, RequestState.queued];
+/// List of states which represent that request failed
+const List<RequestState> errorStates = [
+  RequestState.expired,
+  RequestState.failed,
+];
 
+/// List of states which represent that request is waiting
+const List<RequestState> waitingStates = [
+  RequestState.running,
+  RequestState.queued,
+];
+
+// Private map for to/from string conversion
 const Map<RequestState, String> _stateMap = {
   RequestState.queued: 'QUEUED',
   RequestState.running: 'RUNNING',
@@ -34,28 +46,50 @@ extension on RequestState {
   String toName() => _stateMap[this];
 }
 
+/// Class representing a single request. All properties are immutable, and
+/// new states are emitted by [stateStream]
 class Request {
+  /// UUID of the request - can be used to fetch images etc
   final String uuid;
+
+  /// Stream that emits new states
+  /// Possible values:
+  /// - RequestState.queued, DateTime eta
+  /// - RequestState.running, DateTime eta
+  /// - RequestState.expired, String errorMessage
+  /// - RequestState.failed, String errorMessage
+  /// - RequestState.finished, int result
   final Stream<MapEntry<RequestState, dynamic>> stateStream;
 
   Request(this.uuid, this.stateStream);
 }
 
+/// Represents that rate limit was exceeded and you need to wait to make
+/// new requests
+// IDEA: Add info *when* you can start making new exceptions, or info
+// about current limits
+class RateLimitException implements Exception {
+  final String message;
+
+  RateLimitException(this.message);
+}
+
+/// Loop that checks for new states and handles the logic
 Stream<MapEntry<RequestState, dynamic>> _stateStream(String uuid) async* {
   yield MapEntry(RequestState.queued, null);
   final infoUrl = Uri.parse('${API_BASE_URL}info/$uuid/');
 
   var errorCount = 0;
-  const tries = 6;
-  var json = <String, dynamic>{'result': null};
+  const maxTries = 6;
+  var json = <String, dynamic>{};
   while (true) {
     final delay = min(max((json['eta'] as num ?? 0) / 2, 1), 10).toInt();
     await Future.delayed(Duration(seconds: delay));
 
     final infoRes = await http.get(infoUrl);
     if (infoRes.statusCode != 200) {
-      if (errorCount < tries) {
-        print('Status code != 200, $errorCount/$tries try');
+      if (errorCount < maxTries) {
+        print('Status code != 200, $errorCount/$maxTries try');
         errorCount++;
         continue;
       } else {
@@ -90,11 +124,20 @@ Stream<MapEntry<RequestState, dynamic>> _stateStream(String uuid) async* {
   }
 }
 
+/// Makes new requests
+///
+/// Throws [RateLimitException] if rate limit was exceeded and you need to wait
+/// to make new requests
+/// Throws an HttpException if it was failed
 Future<Request> makeRequest() async {
-  final rollRes = await http.get(Uri.parse(API_BASE_URL + 'roll/'));
-  if (rollRes.statusCode != 200) {
-    throw HttpException("roll/ endpoint didn't return 200");
+  final url = Uri.parse(API_BASE_URL + 'roll/');
+  final rollRes = await http.get(url);
+  if (rollRes.statusCode >= 200 && rollRes.statusCode < 300) {
+    final uuid = rollRes.body;
+    return Request(uuid, _stateStream(uuid));
+  } else if (rollRes.statusCode == 410) {
+    throw RateLimitException(rollRes.body);
+  } else {
+    throw HttpException(rollRes.body, uri: url);
   }
-  final uuid = rollRes.body;
-  return Request(uuid, _stateStream(uuid));
 }
