@@ -56,9 +56,12 @@ class Request {
   /// Possible values:
   /// - RequestState.queued, DateTime eta
   /// - RequestState.running, DateTime eta
-  /// - RequestState.expired, String errorMessage
-  /// - RequestState.failed, String errorMessage
   /// - RequestState.finished, int result
+  /// - RequestState.expired and RequestState.failed, Exception e - can be:
+  ///
+  ///     - HttpException - generic, something just went wrong, try again
+  ///
+  ///     - ApiUnavailableException - api unavailable, probably maintenance
   final Stream<MapEntry<RequestState, dynamic>> stateStream;
 
   Request(this.uuid, this.stateStream);
@@ -118,7 +121,12 @@ Stream<MapEntry<RequestState, dynamic>> _stateStream(String uuid) async* {
       } else {
         yield MapEntry(
           RequestState.failed,
-          'Status code != 200: ${infoRes.statusCode} : ${infoRes.body}',
+          infoRes.statusCode == 502
+              ? ApiUnavailableException(message: infoRes.body)
+              : HttpException(
+                  '${infoRes.statusCode} : ${infoRes.body}',
+                  uri: infoUrl,
+                ),
         );
         return;
       }
@@ -136,14 +144,17 @@ Stream<MapEntry<RequestState, dynamic>> _stateStream(String uuid) async* {
       // If it's already expired then something is not right :/
       yield MapEntry(
         state,
-        'Request was failed: ${infoRes.statusCode} : ${infoRes.body}',
+        HttpException(
+            'Request was failed: ${infoRes.statusCode} : ${infoRes.body}'),
       );
       return;
     } else {
       yield MapEntry(
         RequestState.failed,
-        'Unimplemented request state. This should never happen. '
-        'Tell @TheLastGimbus that he broke something',
+        UnimplementedError(
+          'Unimplemented request state. This should never happen. '
+          'Tell @TheLastGimbus that he broke something',
+        ),
       );
       return;
     }
@@ -183,9 +194,11 @@ Future<Request> makeRequest() async {
 Future<int> getSimpleResult() async {
   final req = await makeRequest();
   final result = await req.stateStream.last;
-  if (result.key != RequestState.finished) {
-    throw 'Result failed - try again';
-  } else {
+  if (result.key == RequestState.finished) {
     return result.value as int;
+  } else if (errorStates.contains(result.key)) {
+    throw result.value;
+  } else {
+    throw 'Request failed :( try again';
   }
 }
