@@ -66,12 +66,12 @@ class Request {
 
 /// Represents that rate limit was exceeded and you need to wait to make
 /// new requests
-// IDEA: Add info *when* you can start making new exceptions, or info
-// about current limits
 class RateLimitException implements Exception {
   final String message;
+  /// DateTime when limit will be reset and you can make new requests
+  final DateTime limitReset;
 
-  RateLimitException(this.message);
+  RateLimitException(this.message, {this.limitReset});
 }
 
 /// Loop that checks for new states and handles the logic
@@ -135,8 +135,14 @@ Future<Request> makeRequest() async {
   if (rollRes.statusCode >= 200 && rollRes.statusCode < 300) {
     final uuid = rollRes.body;
     return Request(uuid, _stateStream(uuid));
-  } else if (rollRes.statusCode == 410) {
-    throw RateLimitException(rollRes.body);
+  } else if (rollRes.statusCode == 429) {
+    final resetEp = rollRes.headers['x-ratelimit-reset'];
+    final reset = resetEp != null
+        ? DateTime.fromMillisecondsSinceEpoch(
+            (num.parse(resetEp) * 1000).toInt(),
+          )
+        : null;
+    throw RateLimitException(rollRes.body, limitReset: reset);
   } else {
     throw HttpException(rollRes.body, uri: url);
   }
