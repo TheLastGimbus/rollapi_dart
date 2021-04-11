@@ -1,3 +1,4 @@
+/// This file contains all nice methods that the end user will use
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;

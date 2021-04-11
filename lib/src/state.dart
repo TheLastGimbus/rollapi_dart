@@ -1,3 +1,4 @@
+/// This file contains enums etc to represent the state of the Request
 
 /// State of the request.
 /// Whether it's already finished, or waiting in a queue, etc

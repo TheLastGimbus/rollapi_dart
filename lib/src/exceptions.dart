@@ -1,3 +1,5 @@
+/// This file contains all the exceptions
+
 /// Generic exception that something messed up with API
 class ApiException implements Exception {
   final String message;

@@ -1,3 +1,4 @@
+/// This file just contains Request class
 import 'state.dart';
 
 /// Class representing a single request. All properties are immutable, and
