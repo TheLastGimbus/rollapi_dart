@@ -68,6 +68,7 @@ class Request {
 /// new requests
 class RateLimitException implements Exception {
   final String message;
+
   /// DateTime when limit will be reset and you can make new requests
   final DateTime limitReset;
 
@@ -79,21 +80,31 @@ Stream<MapEntry<RequestState, dynamic>> _stateStream(String uuid) async* {
   yield MapEntry(RequestState.queued, null);
   final infoUrl = Uri.parse('${API_BASE_URL}info/$uuid/');
 
+  DateTime etaDateTime(num epoch) => epoch != null
+      ? DateTime.fromMillisecondsSinceEpoch((epoch * 1000).toInt())
+      : null;
+
   var errorCount = 0;
   const maxTries = 6;
   var json = <String, dynamic>{};
   while (true) {
-    final delay = min(max((json['eta'] as num ?? 0) / 2, 1), 10).toInt();
-    await Future.delayed(Duration(seconds: delay));
+    final delay = etaDateTime(json['eta'] as num)
+            ?.difference(DateTime.now())
+            ?.inSeconds
+            ?.clamp(0, 10) ??
+        1;
+    await Future.delayed(Duration(seconds: delay.toInt()));
 
     final infoRes = await http.get(infoUrl);
     if (infoRes.statusCode != 200) {
       if (errorCount < maxTries) {
-        print('Status code != 200, $errorCount/$maxTries try');
         errorCount++;
         continue;
       } else {
-        yield MapEntry(RequestState.failed, 'Status code != 200');
+        yield MapEntry(
+          RequestState.failed,
+          'Status code != 200: ${infoRes.statusCode} : ${infoRes.body}',
+        );
         return;
       }
     }
@@ -102,22 +113,22 @@ Stream<MapEntry<RequestState, dynamic>> _stateStream(String uuid) async* {
     if (waitingStates.contains(state)) {
       // Normal flow - waiting for result
       // Update the eta - it may change during the waiting
-      yield MapEntry(
-        state,
-        DateTime.now().add(Duration(seconds: (json['eta'] as num).toInt())),
-      );
+      yield MapEntry(state, etaDateTime(json['eta'] as num));
     } else if (state == RequestState.finished) {
       yield MapEntry(RequestState.finished, json['result'] as int);
       return;
     } else if (errorStates.contains(state)) {
       // If it's already expired then something is not right :/
-      yield MapEntry(state, 'Request was failed: $infoRes');
+      yield MapEntry(
+        state,
+        'Request was failed: ${infoRes.statusCode} : ${infoRes.body}',
+      );
       return;
     } else {
       yield MapEntry(
         RequestState.failed,
         'Unimplemented request state. This should never happen. '
-        'Write to @TheLastGimbus that he broke something',
+        'Tell @TheLastGimbus that he broke something',
       );
       return;
     }
