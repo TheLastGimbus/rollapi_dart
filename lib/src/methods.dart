@@ -10,6 +10,12 @@ import 'state.dart';
 /// Base URL where API lives - must end with the '/'
 String API_BASE_URL = 'https://roll.lastgimbus.com/api/';
 
+/// Checks if instance under [API_BASE_URL] is available right now
+Future<bool> isAvailable() async {
+  var req = await http.get(Uri.parse(API_BASE_URL));
+  return req.statusCode >= 200 && req.statusCode < 300;
+}
+
 /// Stream of states for given [uuid] request. Can be useful for example for
 /// re-checking state after network loss. Otherwise just use [makeRequest]
 ///
@@ -119,6 +125,7 @@ Future<Request> makeRequest() async {
     throw ApiException('${rollRes.statusCode} : ${rollRes.body}');
   }
 }
+
 /// ![Chosen by a fair dice roll, guaranteed to be random](https://raw.githubusercontent.com/TheLastGimbus/rollapi_dart/master/images/xkcd_221_random_number.png]
 ///
 /// This is *simplest possible* helper function, taken straight from XKCD 221,
