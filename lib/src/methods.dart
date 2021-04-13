@@ -119,9 +119,10 @@ Future<Request> makeRequest() async {
     throw ApiException('${rollRes.statusCode} : ${rollRes.body}');
   }
 }
-
-/// This is *simplest possible* helper function for those who don't want to
-/// mess with [stateStream] and [RequestStatus]
+/// ![Chosen by a fair dice roll, guaranteed to be random](https://raw.githubusercontent.com/TheLastGimbus/rollapi_dart/master/images/xkcd_221_random_number.png]
+///
+/// This is *simplest possible* helper function, taken straight from XKCD 221,
+/// for those who don't want to mess with [stateStream] and [RequestStatus]
 ///
 /// It either returns a number, or throws an Exception in the process. Simple.
 ///
