@@ -6,3 +6,11 @@
 
 - Null-safety
 - Rename `getSimpleResult()` to `getRandomNumber()` so it's a real-life xkcd comic
+
+## 1.2.0
+
+- CLI app
+    - Basic roll
+    - Password generator
+- Bugfixes
+- More verbose error logging
