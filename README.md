@@ -67,3 +67,27 @@ If you want to use another instance, because you want to test your own or offici
 import 'package:rollapi/rollapi.dart' as roll;
 roll.API_BASE_URL = 'http://192.168.1.100:5000/api/'; 
 ```
+
+## CLI
+
+This package also offers really nice CLI, that can, for example, generate you a random password!
+You can either get it with `dart pub global activate rollapi`, or from GitHub releases:
+[https://github.com/TheLastGimbus/rollapi_dart/releases/](https://github.com/TheLastGimbus/rollapi_dart/releases/)
+
+Then, you can run:
+
+```bash
+$ rollapi roll
+Rolling the dice...
+1
+```
+
+```bash
+$ rollapi pwd --numbers -l 6
+Generating random password...
+0%
+8%
+...
+92%
+DONE! Your password: cwgl0r
+```
