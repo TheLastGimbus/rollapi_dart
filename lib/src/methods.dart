@@ -10,9 +10,11 @@ import 'state.dart';
 /// Base URL where API lives - must end with the '/'
 String API_BASE_URL = 'https://roll.lastgimbus.com/api/';
 
+Map<String, String> HEADERS = {};
+
 /// Checks if instance under [API_BASE_URL] is available right now
 Future<bool> isAvailable() async {
-  var req = await http.get(Uri.parse(API_BASE_URL));
+  var req = await http.get(Uri.parse(API_BASE_URL), headers: HEADERS);
   return req.statusCode >= 200 && req.statusCode < 300;
 }
 
@@ -49,7 +51,7 @@ Stream<MapEntry<RequestState, dynamic?>> stateStream(String uuid) async* {
         etaDateTime(epoch).difference(DateTime.now()).inSeconds.clamp(0, 10);
     await Future.delayed(Duration(seconds: delay.toInt()));
 
-    final infoRes = await http.get(infoUrl);
+    final infoRes = await http.get(infoUrl, headers: HEADERS);
     if (infoRes.statusCode != 200) {
       if (errorCount < maxTries) {
         errorCount++;
@@ -82,7 +84,7 @@ Stream<MapEntry<RequestState, dynamic?>> stateStream(String uuid) async* {
       // If it's already expired then something is not right :/
       yield MapEntry(
         state,
-        ApiException('${infoRes.statusCode} : ${infoRes.body}'),
+        ApiException('$infoUrl : ${infoRes.statusCode} : ${infoRes.body}'),
       );
       return;
     } else {
@@ -107,7 +109,7 @@ Stream<MapEntry<RequestState, dynamic?>> stateStream(String uuid) async* {
 /// Uses [stateStream] under the hood
 Future<Request> makeRequest() async {
   final url = Uri.parse(API_BASE_URL + 'roll/');
-  final rollRes = await http.get(url);
+  final rollRes = await http.get(url, headers: HEADERS);
   if (rollRes.statusCode >= 200 && rollRes.statusCode < 300) {
     final uuid = rollRes.body;
     return Request(uuid, stateStream(uuid));
@@ -118,11 +120,13 @@ Future<Request> makeRequest() async {
             (num.parse(resetEp) * 1000).toInt(),
           )
         : null;
-    throw RateLimitException(rollRes.body, reset);
+    throw RateLimitException(
+        '$url : ${rollRes.statusCode} : ${rollRes.body}', reset);
   } else if (rollRes.statusCode == 502) {
-    throw ApiUnavailableException(rollRes.body);
+    throw ApiUnavailableException(
+        '$url : ${rollRes.statusCode} ${rollRes.body}');
   } else {
-    throw ApiException('${rollRes.statusCode} : ${rollRes.body}');
+    throw ApiException('$url : ${rollRes.statusCode} : ${rollRes.body}');
   }
 }
 
