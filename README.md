@@ -60,3 +60,10 @@ Check it out: [https://github.com/TheLastGimbus/Roll-API](https://github.com/The
     }
    });
    ```
+
+If you want to use another instance, because you want to test your own or official is currently down, you can:
+
+```dart
+import 'package:rollapi/rollapi.dart' as roll;
+roll.API_BASE_URL = 'http://192.168.1.100:5000/api/'; 
+```
