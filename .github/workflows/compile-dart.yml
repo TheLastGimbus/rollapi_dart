@@ -1,0 +1,39 @@
+# This workflow uses actions that are not certified by GitHub.
+# They are provided by a third-party and are governed by
+# separate terms of service, privacy policy, and support
+# documentation.
+
+name: Compile CLI and upload to releases
+
+on:
+  release:
+    types: [created]
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        os: [ ubuntu-latest, windows-latest, macos-latest ]
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v2
+      # Note: This workflow uses the latest stable version of the Dart SDK.
+      - uses: dart-lang/setup-dart@v1
+      - name: Install dependencies
+        run: dart pub get
+      - name: Compile
+        run: dart compile exe -o ${{ matrix.os}}-rollapi.exe
+      - name: Get Latest Release
+        uses: pozetroninc/github-action-get-latest-release@v0.5.0
+        with:
+          repository: ${{ github.repository }}
+        id: latest-tag
+      - name: Upload exe to latest release
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: ${{ matrix.os}}-rollapi.exe
+          asset_name: ${{ matrix.os}}-rollapi.exe
+          tag: ${{ steps.latest-tag.outputs.release }} 
+          overwrite: true
