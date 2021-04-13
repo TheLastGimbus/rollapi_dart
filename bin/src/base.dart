@@ -1,4 +1,5 @@
-library any_base;
+/// Proudly stolen from: https://github.com/krista-koivisto/any_base
+/// Thanks @krista-koivisto :*
 
 /// Convert numbers from any base (radix) to any other base using any alphabet
 /// of digits.
@@ -32,8 +33,8 @@ class AnyBase {
   static const String hex = '0123456789abcdef';
 
   const AnyBase(this.sourceAlphabet, this.destinationAlphabet)
-      : assert(sourceAlphabet != null && sourceAlphabet.length > 0),
-        assert(destinationAlphabet != null && destinationAlphabet.length > 0);
+      : assert(sourceAlphabet.length > 0),
+        assert(destinationAlphabet.length > 0);
 
   /// Convert `source` from the source alphabet to the destination alphabet.
   ///
@@ -52,21 +53,22 @@ class AnyBase {
   }
 
   static String _convert(
-      source, String sourceAlphabet, String destinationAlphabet) {
-    assert(source != null);
-    if (source.length == 0 || sourceAlphabet == destinationAlphabet) {
+    String source,
+    String sourceAlphabet,
+    String destinationAlphabet,
+  ) {
+    if (source.isEmpty || sourceAlphabet == destinationAlphabet) {
       return source;
     }
-
     final sourceBase = sourceAlphabet.length;
     final destinationBase = destinationAlphabet.length;
-    final Map numberMap = {};
-    int divide = 0;
-    int newLength = 0;
-    int length = source.length;
-    String result = '';
+    final numberMap = <int, int>{};
+    var divide = 0;
+    var newLength = 0;
+    var length = source.length;
+    var result = '';
 
-    for (int i = 0; i < length; i++) {
+    for (var i = 0; i < length; i++) {
       final index = sourceAlphabet.indexOf(source[i]);
       if (index == -1) {
         throw FormatException('Source "$source" contains character ' +
@@ -82,8 +84,8 @@ class AnyBase {
     do {
       divide = 0;
       newLength = 0;
-      for (int i = 0; i < length; i++) {
-        divide = divide * sourceBase + numberMap[i];
+      for (var i = 0; i < length; i++) {
+        divide = divide * sourceBase + numberMap[i]!.toInt();
         if (divide >= destinationBase) {
           numberMap[newLength++] = divide ~/ destinationBase;
           divide = divide % destinationBase;
