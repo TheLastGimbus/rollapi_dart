@@ -43,7 +43,7 @@ Check it out: [https://github.com/TheLastGimbus/Roll-API](https://github.com/The
         print('Wating...');
         // .queued value is an ETA DateTime - which can be null
         if (event.value != null) {
-          var sec = DateTime.now().difference(event.value as DateTime);
+          var sec = (event.value as DateTime).difference(DateTime.now());
           print('Time left: $sec seconds');
         }
         break;
