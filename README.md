@@ -3,6 +3,11 @@ Dart library for Roll-API
 
 ![Pub.dev shield](https://img.shields.io/pub/v/rollapi)
 
+
+![API available badge](https://img.shields.io/website?down_color=red&label=API&up_color=green&url=https%3A%2F%2Froll.lastgimbus.com%2Fapi%2F)
+
+This icon ↑ indicates if API is working right now
+
 ## What the hell is Roll-API??
 
 It's a super cool API that allows you to roll a **real dice** and get it's number!
