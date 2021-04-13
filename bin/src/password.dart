@@ -12,6 +12,14 @@ const lettersLowercase = 'abcdefghijklmnopqrstuvwxyz';
 /// Custom log of N-th level
 num logN(num x, num n) => log(x) / log(n);
 
+/// Generates a random password
+///
+/// If somethings goes wrong mid-way and API fails too much, it may return
+/// *some* password but not the full length - thus, if it will fail at start,
+/// it will return 0-length string
+///
+/// But don't be fooled! It may still throw you some network exceptions!
+/// Just on
 Future<String> getRandomPassword({
   int length = 8,
   String possibleChars = lettersLowercase,
@@ -33,7 +41,7 @@ Future<String> getRandomPassword({
     try {
       diceString += (await roll.getRandomNumber()).toString();
     } on roll.RateLimitException catch (e) {
-      print('Rate limit hit: $e');
+      print(e);
       if (e.limitReset != null) {
         print('Waiting until: ${e.limitReset}...');
         await Future.delayed(e.limitReset!.difference(DateTime.now()));
@@ -43,17 +51,26 @@ Future<String> getRandomPassword({
       }
       i--;
       continue;
-    } on roll.ApiUnavailableException {
-      print('Api unavailable!');
+    } on roll.ApiUnavailableException catch (e) {
+      print(e);
+      break;
     } on roll.ApiException catch (e) {
       print(e);
       failures++;
-      if (failures > maxFailures) rethrow;
+      if (failures > maxFailures) break;
       i--;
       continue;
     }
   }
   final dice2pass = based.AnyBase(diceCharacters, possibleChars);
+  final pass = dice2pass.convert(diceString);
 
-  return dice2pass.convert(diceString).substring(0, length);
+  if (pass.length > length) {
+    return pass.substring(0, length);
+  }
+  if (pass.length < length) {
+    print("Couldn't finish your password, but here you go, "
+        '${pass.length}/$length characters');
+  }
+  return pass;
 }
