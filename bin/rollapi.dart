@@ -16,9 +16,9 @@ void main(List<String> arguments) async {
   parser.addOption('pwd', help: 'Password for things like skipping rate limit');
   final pwdParser = parser.addCommand('pwd');
   pwdParser.addOption(
-    'lenght',
+    'length',
     abbr: 'l',
-    help: 'Lenght of the password',
+    help: 'Length of the password',
     defaultsTo: '8',
   );
   pwdParser.addFlag(
@@ -55,13 +55,13 @@ void main(List<String> arguments) async {
   switch (args.command?.name) {
     case 'pwd':
       final pwd = args.command!;
-      final lenght = int.parse(pwd['lenght']);
-      if (lenght < 0) print('Here you go, 0-length password: ');
-      if (lenght > 12) {
-        print('Trust me, you *DONT* want to wait for this');
+      final length = int.parse(pwd['length']);
+      if (length < 0) print('Here you go, 0-length password: ');
+      if (length > 12) {
+        print("Trust me, you *DON'T* want to wait for this");
         print('If you really want *that long* password, split it in half');
       }
-      if (lenght > 18) {
+      if (length > 18) {
         print("Above 18??? Oh no no no sorry you can't make *THAT LONG*");
         exit(69);
       }
@@ -72,7 +72,7 @@ void main(List<String> arguments) async {
       chars += pwd['special'] ? '!@#\$%^&*' : '';
       print('Generating random password...');
       final gen = await roll_pwd.getRandomPassword(
-          length: lenght, possibleChars: chars);
+          length: length, possibleChars: chars);
       print('DONE! Your password: $gen');
       break;
     case null:
