@@ -2,7 +2,7 @@
 
 /// Generic exception that something messed up with API
 class ApiException implements Exception {
-  final String message;
+  final String? message;
 
   ApiException([this.message]);
 
@@ -14,12 +14,12 @@ class ApiException implements Exception {
 /// new requests
 class RateLimitException implements ApiException {
   @override
-  final String message;
+  final String? message;
 
   /// DateTime when limit will be reset and you can make new requests
-  final DateTime limitReset;
+  final DateTime? limitReset;
 
-  RateLimitException(this.message, {this.limitReset});
+  RateLimitException([this.message, this.limitReset]);
 
   @override
   String toString() => 'RateLimitException: $message | '
@@ -30,7 +30,7 @@ class RateLimitException implements ApiException {
 /// currently unavailable for some reason - for example, maintenance
 class ApiUnavailableException implements ApiException {
   @override
-  final String message;
+  final String? message;
 
   ApiUnavailableException([this.message]);
 

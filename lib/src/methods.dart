@@ -14,8 +14,8 @@ String API_BASE_URL = 'https://roll.lastgimbus.com/api/';
 /// re-checking state after network loss. Otherwise just use [makeRequest]
 ///
 /// Possible values:
-/// - RequestState.queued, DateTime eta
-/// - RequestState.running, DateTime eta
+/// - RequestState.queued, DateTime? eta
+/// - RequestState.running, DateTime? eta
 /// - RequestState.finished, int result
 /// - RequestState.expired and RequestState.failed, Exception e - can be:
 ///
@@ -25,23 +25,22 @@ String API_BASE_URL = 'https://roll.lastgimbus.com/api/';
 ///
 /// This is used by [makeRequest], and is preferred implementation
 /// of [Request.stateStream]
-Stream<MapEntry<RequestState, dynamic>> stateStream(String uuid) async* {
+Stream<MapEntry<RequestState, dynamic?>> stateStream(String uuid) async* {
   yield MapEntry(RequestState.queued, null);
   final infoUrl = Uri.parse('${API_BASE_URL}info/$uuid/');
 
-  DateTime etaDateTime(num epoch) => epoch != null
-      ? DateTime.fromMillisecondsSinceEpoch((epoch * 1000).toInt())
-      : null;
+  DateTime etaDateTime(num epoch) =>
+      DateTime.fromMillisecondsSinceEpoch((epoch * 1000).toInt());
 
   var errorCount = 0;
   const maxTries = 6;
   var json = <String, dynamic>{};
   while (true) {
-    final delay = etaDateTime(json['eta'] as num)
-            ?.difference(DateTime.now())
-            ?.inSeconds
-            ?.clamp(0, 10) ??
-        1;
+    final epoch =
+        ((json['eta'] as num?) ?? DateTime.now().millisecondsSinceEpoch / 1000)
+            .toInt();
+    final num delay =
+        etaDateTime(epoch).difference(DateTime.now()).inSeconds.clamp(0, 10);
     await Future.delayed(Duration(seconds: delay.toInt()));
 
     final infoRes = await http.get(infoUrl);
@@ -62,13 +61,16 @@ Stream<MapEntry<RequestState, dynamic>> stateStream(String uuid) async* {
     }
     // At this point we know it was 200, so we can safely parse the body:
     json = jsonDecode(infoRes.body);
-    final state = requestStateFromName(json['status']);
+    // If any of the fields are null then there's something definitely wrong
+    // with the API - thus, crush the whole thing
+    // "Albo zadziała, albo *totalnie* sie zesra"
+    final state = requestStateFromName(json['status']!);
     if (requestWaitingStates.contains(state)) {
       // Normal flow - waiting for result
       // Update the eta - it may change during the waiting
-      yield MapEntry(state, etaDateTime(json['eta'] as num));
+      yield MapEntry(state, etaDateTime(json['eta']! as num));
     } else if (state == RequestState.finished) {
-      yield MapEntry(RequestState.finished, json['result'] as int);
+      yield MapEntry(RequestState.finished, json['result']! as int);
       return;
     } else if (requestErrorStates.contains(state)) {
       // If it's already expired then something is not right :/
@@ -110,7 +112,7 @@ Future<Request> makeRequest() async {
             (num.parse(resetEp) * 1000).toInt(),
           )
         : null;
-    throw RateLimitException(rollRes.body, limitReset: reset);
+    throw RateLimitException(rollRes.body, reset);
   } else if (rollRes.statusCode == 502) {
     throw ApiUnavailableException(rollRes.body);
   } else {

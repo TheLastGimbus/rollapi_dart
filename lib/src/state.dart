@@ -35,5 +35,5 @@ RequestState requestStateFromName(String string) =>
     _stateMap.keys.firstWhere((e) => _stateMap[e] == string);
 
 extension on RequestState {
-  String toName() => _stateMap[this];
+  String toName() => _stateMap[this]!;
 }
