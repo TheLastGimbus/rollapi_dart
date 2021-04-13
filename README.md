@@ -8,6 +8,8 @@ Dart library for Roll-API
 It's a super cool API that allows you to roll a **real dice** and get it's number!
 Check it out: [https://github.com/TheLastGimbus/Roll-API](https://github.com/TheLastGimbus/Roll-API)
 
+![XKCD 221 - random number](images/xkcd_221_random_number.png)
+
 ## How to use
 1. Import:
 
@@ -15,7 +17,7 @@ Check it out: [https://github.com/TheLastGimbus/Roll-API](https://github.com/The
    import 'package:rollapi/rollapi.dart' as roll;
    ```
    
-2. Simple way - use `getSimpleResult()`:
+2. Simple way - use `getRandomNumber()`:
 
    ```dart
    print("Rolling a dice...");

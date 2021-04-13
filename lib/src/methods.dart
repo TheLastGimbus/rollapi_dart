@@ -126,7 +126,7 @@ Future<Request> makeRequest() async {
 /// It either returns a number, or throws an Exception in the process. Simple.
 ///
 /// Uses [makeRequest] under the hood
-Future<int> getSimpleResult() async {
+Future<int> getRandomNumber() async {
   final req = await makeRequest();
   final result = await req.stateStream.last;
   if (result.key == RequestState.finished) {
