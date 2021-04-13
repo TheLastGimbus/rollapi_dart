@@ -23,7 +23,7 @@ jobs:
       - name: Install dependencies
         run: dart pub get
       - name: Compile
-        run: dart compile exe -o ${{ matrix.os}}-rollapi.exe
+        run: dart compile exe bin/rollapi.dart -o ${{ matrix.os}}-rollapi.exe
       - name: Get Latest Release
         uses: pozetroninc/github-action-get-latest-release@v0.5.0
         with:
