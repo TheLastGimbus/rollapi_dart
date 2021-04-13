@@ -41,7 +41,7 @@ void main(List<String> arguments) async {
   );
   pwdParser.addFlag(
     'special',
-    help: 'Include special characters: $specialCharacters',
+    help: 'Include special characters: !@#\$%^&*',
     defaultsTo: false,
     negatable: true,
   );
