@@ -14,3 +14,7 @@
     - Password generator
 - Bugfixes
 - More verbose error logging
+
+## 1.2.1
+
+Same as 1.2.0 but CI fix
