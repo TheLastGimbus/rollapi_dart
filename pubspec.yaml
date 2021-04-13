@@ -5,6 +5,9 @@ repository: https://github.com/TheLastGimbus/rollapi_dart
 homepage: https://roll.lastgimbus.com/
 issue_tracker: https://github.com/TheLastGimbus/rollapi_dart/issues
 
+executables:
+  rollapi: rollapi
+
 environment:
   sdk: '>=2.12.0 <3.0.0'
 
