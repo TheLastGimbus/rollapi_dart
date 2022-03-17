@@ -10,7 +10,7 @@ class RollApiClient {
   final Uri baseUrl;
 
   /// API password for things like skipping rate limit
-  final String? pwd;
+  final String? password;
 
   /// Minimum frequency of pinging API for results when waiting - don't go crazy
   /// cause you might get rate-limited
@@ -21,12 +21,12 @@ class RollApiClient {
     ///
     /// Note that it will automatically add a trailing slash if not present
     String baseUrl = 'https://roll.lastgimbus.com/api/',
-    this.pwd,
+    this.password,
     this.minPingFrequency = const Duration(seconds: 10),
   }) : baseUrl = Uri.parse(baseUrl.endsWith('/') ? baseUrl : '$baseUrl/');
 
-  /// Headers that will be sent with every request. Currently just [pwd]
-  Map<String, String> get headers => pwd != null ? {'pwd': pwd!} : {};
+  /// Headers that will be sent with every request. Currently just [password]
+  Map<String, String> get headers => password != null ? {'pwd': password!} : {};
 
   /// Requests a roll and returns stream of [RollState]s of how's it going
   Future<Stream<RollState>> roll() async {

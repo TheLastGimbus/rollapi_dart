@@ -1,6 +1,6 @@
 import 'dart:math';
 
-import 'package:rollapi/rollapi.dart' as roll;
+import 'package:rollapi/rollapi.dart';
 
 import 'base.dart' as based;
 
@@ -20,7 +20,7 @@ num logN(num x, num n) => log(x) / log(n);
 ///
 /// But don't be fooled! It may still throw you some network exceptions!
 /// Just on
-Future<String> getRandomPassword({
+Future<String> getRandomPassword(RollApiClient client, {
   int length = 8,
   String possibleChars = lettersLowercase,
 }) async {
@@ -39,8 +39,8 @@ Future<String> getRandomPassword({
   for (var i = 0; i < times; i++) {
     print('${(i / times * 100).round()}%');
     try {
-      diceString += (await roll.getRandomNumber()).toString();
-    } on roll.RateLimitException catch (e) {
+      diceString += (await client.getRandomNumber()).toString();
+    } on RollApiRateLimitException catch (e) {
       print(e);
       if (e.limitReset != null) {
         print('Waiting until: ${e.limitReset}...');
@@ -51,10 +51,10 @@ Future<String> getRandomPassword({
       }
       i--;
       continue;
-    } on roll.ApiUnavailableException catch (e) {
+    } on RollApiUnavailableException catch (e) {
       print(e);
       break;
-    } on roll.ApiException catch (e) {
+    } on RollApiException catch (e) {
       print(e);
       failures++;
       if (failures > maxFailures) break;

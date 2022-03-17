@@ -1,9 +1,11 @@
 import 'dart:io';
 
 import 'package:args/command_runner.dart';
-import 'package:rollapi/rollapi.dart' as roll;
+import 'package:rollapi/rollapi.dart';
 
 import 'src/password.dart' as roll_pwd;
+
+late final RollApiClient client;
 
 void main(List<String> arguments) async {
   final runner = CommandRunner(
@@ -26,9 +28,8 @@ void main(List<String> arguments) async {
     );
 
   final args = runner.parse(arguments);
-  roll.API_BASE_URL = args['url'];
-  if (!roll.API_BASE_URL.endsWith('/')) roll.API_BASE_URL += '/';
-  roll.HEADERS['pwd'] = args['pwd'] ?? '';
+
+  client = RollApiClient(baseUrl: args['url'], password: args['pwd']);
 
   await runner.run(arguments);
 }
@@ -92,8 +93,11 @@ class PwdCommand extends Command {
     chars += pwd['numbers'] ? '0123456789' : '';
     chars += pwd['special'] ? '!@#\$%^&*' : '';
     print('Generating random password...');
-    final gen =
-        await roll_pwd.getRandomPassword(length: length, possibleChars: chars);
+    final gen = await roll_pwd.getRandomPassword(
+      client,
+      length: length,
+      possibleChars: chars,
+    );
     print('DONE! Your password: $gen');
   }
 }
@@ -108,6 +112,6 @@ class RollCommand extends Command {
   @override
   void run() async {
     print('Rolling the dice...');
-    print(await roll.getRandomNumber());
+    print(await client.getRandomNumber());
   }
 }
