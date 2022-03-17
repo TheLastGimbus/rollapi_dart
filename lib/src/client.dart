@@ -30,7 +30,7 @@ class RollApiClient {
 
   /// Requests a roll and returns stream of [RollState]s of how's it going
   Future<Stream<RollState>> roll() async {
-    final url = baseUrl.resolve('roll/');
+    final url = getRollUrl();
     final rollRes = await http.get(url, headers: headers);
     if (_httpIsOk(rollRes.statusCode)) {
       if (_isValidUuid(rollRes.body)) {
@@ -64,9 +64,24 @@ class RollApiClient {
     }
   }
 
+  /// Url of image of the dice
+  Uri getImageUrl(String uuid) => baseUrl.resolve('image/$uuid/');
+
+  /// Url of image after analysis pre-processing
+  Uri getAnalImageUrl(String uuid) => baseUrl.resolve('anal-image/$uuid/');
+
+  /// Url with info about the roll
+  Uri getInfoUrl(String uuid) => baseUrl.resolve('info/$uuid/');
+
+  /// Url with pure result of the roll
+  Uri getResultUrl(String uuid) => baseUrl.resolve('result/$uuid/');
+
+  /// Url to request a roll
+  Uri getRollUrl() => baseUrl.resolve('roll/');
+
   /// Keeps checking the state of the roll until it's finished
   Stream<RollState> _stateStream(String uuid) async* {
-    final infoUrl = baseUrl.resolve('info/$uuid/');
+    final infoUrl = getInfoUrl(uuid);
 
     // Helper function
     DateTime etaDateTime(num epoch) =>
