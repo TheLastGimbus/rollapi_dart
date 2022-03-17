@@ -1,39 +1,49 @@
 /// This file contains all the exceptions
 
 /// Generic exception that something messed up with API
-class ApiException implements Exception {
+class RollApiException implements Exception {
   final String? message;
 
-  ApiException([this.message]);
+  RollApiException([this.message]);
 
   @override
-  String toString() => 'ApiException: $message';
+  String toString() => 'RollApiException: $message';
 }
 
-/// Represents that rate limit was exceeded and you need to wait to make
-/// new requests
-class RateLimitException implements ApiException {
+/// Rate limit was exceeded and you need to wait to make new requests
+class RollApiRateLimitException implements RollApiException {
   @override
   final String? message;
 
-  /// DateTime when limit will be reset and you can make new requests
+  /// DateTime when limit will be reset and you can try to make new requests
   final DateTime? limitReset;
 
-  RateLimitException([this.message, this.limitReset]);
+  RollApiRateLimitException([this.message, this.limitReset]);
 
   @override
-  String toString() => 'RateLimitException: $message | '
+  String toString() => 'RollApiRateLimitException: $message | '
       'Limit reset: ${limitReset?.toString() ?? 'unknown'}';
 }
 
-/// Represents that while the base URL is ping-able, the API backend is
-/// currently unavailable for some reason - for example, maintenance
-class ApiUnavailableException implements ApiException {
+/// While the base URL is ping-able, the API backend is currently unavailable
+/// for some reason - for example, maintenance
+class RollApiUnavailableException implements RollApiException {
   @override
   final String? message;
 
-  ApiUnavailableException([this.message]);
+  RollApiUnavailableException([this.message]);
 
   @override
-  String toString() => 'ApiUnavailableException: $message';
+  String toString() => 'RollApiUnavailableException: $message';
+}
+
+/// Internal server error (500-ish)
+class RollApiErrorException implements RollApiException {
+  @override
+  final String? message;
+
+  RollApiErrorException([this.message]);
+
+  @override
+  String toString() => 'RollApiErrorException: $message';
 }
