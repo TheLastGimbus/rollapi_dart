@@ -1,5 +1,3 @@
-/// This file contains all the exceptions
-
 /// Generic exception that something messed up with API
 class RollApiException implements Exception {
   final Uri url;
@@ -52,5 +50,5 @@ class RollApiInternalErrorException implements RollApiException {
   const RollApiInternalErrorException(this.url, [this.message]);
 
   @override
-  String toString() => 'RollApiErrorException on [$url]: $message';
+  String toString() => 'RollApiInternalErrorException on [$url]: $message';
 }

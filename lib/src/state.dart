@@ -1,6 +1,14 @@
+/// Here are all classes that hold state and data of the request
+///
+/// The intention is to keep any heavy logic from here and keep just necessary
+/// data
+///
+/// Any helper functions like getting image of successful roll should be left
+/// to the client
 import 'exceptions.dart';
 
 abstract class RollState {
+  /// UUID of the roll
   final String uuid;
 
   const RollState(this.uuid);
@@ -16,15 +24,18 @@ abstract class RollState {
 // Waiting classes
 
 abstract class RollStateWaiting extends RollState {
+  /// Eta when roll is expected to be finished
   final DateTime? eta;
 
   const RollStateWaiting(String uuid, [this.eta]) : super(uuid);
 }
 
+/// Roll is waiting for it's roll in the queue
 class RollStateQueued extends RollStateWaiting {
   const RollStateQueued(String uuid, [DateTime? eta]) : super(uuid, eta);
 }
 
+/// Roll is rolling right now!!
 class RollStateRolling extends RollStateWaiting {
   const RollStateRolling(String uuid, [DateTime? eta]) : super(uuid, eta);
 }
@@ -35,10 +46,12 @@ abstract class RollStateError extends RollState {
   const RollStateError(String uuid) : super(uuid);
 }
 
+/// Roll expired (or never existed at all) - make a new one
 class RollStateErrorExpired extends RollStateError {
   const RollStateErrorExpired(String uuid) : super(uuid);
 }
 
+/// Roll failed - dice flipped bad or whatever
 class RollStateErrorFailed extends RollStateError {
   final RollApiException exception;
 
@@ -48,6 +61,7 @@ class RollStateErrorFailed extends RollStateError {
 // Success
 
 class RollStateFinished extends RollState {
+  /// Your precious random number
   final int number;
 
   const RollStateFinished(String uuid, this.number) : super(uuid);

@@ -20,8 +20,10 @@ class RollApiClient {
     this.pwd,
   }) : baseUrl = Uri.parse(baseUrl.endsWith('/') ? baseUrl : '$baseUrl/');
 
+  /// Headers that will be sent with every request. Currently just [pwd]
   Map<String, String> get headers => pwd != null ? {'pwd': pwd!} : {};
 
+  /// Requests a roll and returns stream of [RollState]s of how's it going
   Future<Stream<RollState>> roll() async {
     final url = baseUrl.resolve('roll/');
     final rollRes = await http.get(url, headers: headers);
@@ -50,6 +52,14 @@ class RollApiClient {
     }
   }
 
+  /// <img src="https://raw.githubusercontent.com/TheLastGimbus/rollapi_dart/master/images/xkcd_221_random_number.png" alt="XKCD 221: Chosen by a fair dice roll, guaranteed to be random">
+  ///
+  /// This is *simplest possible* helper function, taken straight from XKCD 221,
+  /// for those who don't want to mess with stream of states.
+  ///
+  /// It either returns a number, or throws an Exception in the process. Simple.
+  ///
+  /// Uses [roll()] under the hood
   Future<int> getRandomNumber() async {
     final req = await roll();
     final result = await req.last;
@@ -62,6 +72,7 @@ class RollApiClient {
     }
   }
 
+  /// Keeps checking the state of the roll until it's finished
   Stream<RollState> _stateStream(String uuid) async* {
     final infoUrl = baseUrl.resolve('info/$uuid/');
 
