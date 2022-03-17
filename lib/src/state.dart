@@ -51,8 +51,9 @@ class RollStateErrorExpired extends RollStateError {
   const RollStateErrorExpired(String uuid) : super(uuid);
 }
 
-/// Roll failed - dice flipped bad or whatever
+/// Roll failed - dice flipped bad or API unavailable or something
 class RollStateErrorFailed extends RollStateError {
+  /// This exception can tell you if API is unavailable ([RollApiUnavailableException])
   final RollApiException exception;
 
   const RollStateErrorFailed(String uuid, this.exception) : super(uuid);

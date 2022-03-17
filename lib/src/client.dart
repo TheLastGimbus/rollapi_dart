@@ -12,12 +12,17 @@ class RollApiClient {
   /// API password for things like skipping rate limit
   final String? pwd;
 
+  /// Minimum frequency of pinging API for results when waiting - don't go crazy
+  /// cause you might get rate-limited
+  final Duration minPingFrequency;
+
   RollApiClient({
     /// Base URL for API - you can change this to your own instance
     ///
     /// Note that it will automatically add a trailing slash if not present
     String baseUrl = 'https://roll.lastgimbus.com/api/',
     this.pwd,
+    this.minPingFrequency = const Duration(seconds: 10),
   }) : baseUrl = Uri.parse(baseUrl.endsWith('/') ? baseUrl : '$baseUrl/');
 
   /// Headers that will be sent with every request. Currently just [pwd]
@@ -27,28 +32,15 @@ class RollApiClient {
   Future<Stream<RollState>> roll() async {
     final url = baseUrl.resolve('roll/');
     final rollRes = await http.get(url, headers: headers);
-    if (rollRes.statusCode >= 200 && rollRes.statusCode < 300) {
-      final responseStr = rollRes.body;
-      if (_isValidUuid(responseStr)) {
-        return _stateStream(responseStr);
+    if (_httpIsOk(rollRes.statusCode)) {
+      if (_isValidUuid(rollRes.body)) {
+        return _stateStream(rollRes.body);
       } else {
-        throw RollApiException(url, '${rollRes.statusCode} : ${rollRes.body}');
+        throw RollApiException(
+            url, 'Invalid UUID! : ${rollRes.statusCode} : ${rollRes.body}');
       }
-    } else if (rollRes.statusCode == 429) {
-      final resetEp = rollRes.headers['x-ratelimit-reset'];
-      final reset = resetEp != null
-          ? DateTime.fromMillisecondsSinceEpoch(
-              (num.parse(resetEp) * 1000).toInt(),
-            )
-          : null;
-      throw RollApiRateLimitException(url, rollRes.body, reset);
-    } else if (rollRes.statusCode == 502) {
-      throw RollApiUnavailableException(url, rollRes.body);
-    } else if (rollRes.statusCode >= 500 && rollRes.statusCode < 600) {
-      throw RollApiInternalErrorException(
-          url, '${rollRes.statusCode} : ${rollRes.body}');
     } else {
-      throw RollApiException(url, '${rollRes.statusCode} : ${rollRes.body}');
+      throw _exceptionFromResponse(rollRes);
     }
   }
 
@@ -76,6 +68,7 @@ class RollApiClient {
   Stream<RollState> _stateStream(String uuid) async* {
     final infoUrl = baseUrl.resolve('info/$uuid/');
 
+    // Helper function
     DateTime etaDateTime(num epoch) =>
         DateTime.fromMillisecondsSinceEpoch((epoch * 1000).toInt());
 
@@ -83,26 +76,24 @@ class RollApiClient {
     const maxTries = 6;
     var json = <String, dynamic>{};
     while (true) {
+      // Fetch eta - if null, set it to now
       final epoch = ((json['eta'] as num?) ??
               DateTime.now().millisecondsSinceEpoch / 1000)
           .toInt();
-      final num delay =
-          etaDateTime(epoch).difference(DateTime.now()).inSeconds.clamp(0, 10);
-      await Future.delayed(Duration(seconds: delay.toInt()));
+      // Force the delay to be between 0 and minPingFrequency
+      final num delayMs = etaDateTime(epoch)
+          .difference(DateTime.now())
+          .inMilliseconds
+          .clamp(0, minPingFrequency.inMilliseconds);
+      await Future.delayed(Duration(milliseconds: delayMs.toInt()));
 
       final infoRes = await http.get(infoUrl, headers: headers);
-      if (infoRes.statusCode != 200) {
+      if (!_httpIsOk(infoRes.statusCode)) {
         if (errorCount < maxTries) {
           errorCount++;
           continue;
         } else {
-          yield RollStateErrorFailed(
-            uuid,
-            infoRes.statusCode == 502
-                ? RollApiUnavailableException(infoUrl, infoRes.body)
-                : RollApiException(
-                    infoUrl, '${infoRes.statusCode} : ${infoRes.body}'),
-          );
+          yield RollStateErrorFailed(uuid, _exceptionFromResponse(infoRes));
           return;
         }
       }
@@ -145,7 +136,26 @@ class RollApiClient {
     }
   }
 
-  bool _isValidUuid(String uuidStr) {
+  RollApiException _exceptionFromResponse(http.Response res) {
+    final url = res.request?.url ?? baseUrl;
+    if (res.statusCode == 429) {
+      final resetEp = res.headers['x-ratelimit-reset'];
+      final reset = resetEp != null
+          ? DateTime.fromMillisecondsSinceEpoch(
+              (num.parse(resetEp) * 1000).toInt())
+          : null;
+      return RollApiRateLimitException(url, res.body, reset);
+    } else if (res.statusCode == 502) {
+      return RollApiUnavailableException(url, res.body);
+    } else if (res.statusCode >= 500 && res.statusCode < 600) {
+      return RollApiInternalErrorException(
+          url, '${res.statusCode} : ${res.body}');
+    } else {
+      return RollApiException(url, '${res.statusCode} : ${res.body}');
+    }
+  }
+
+  static bool _isValidUuid(String uuidStr) {
     // Of course, stolen from internet
     const pattern =
         r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-5][0-9a-f]{3}-[0-9a-f]{4}-[0-9a-f]{12}$';
@@ -153,4 +163,6 @@ class RollApiClient {
     final regex = RegExp(pattern, caseSensitive: false, multiLine: false);
     return regex.hasMatch(uuidStr);
   }
+
+  static bool _httpIsOk(int code) => code >= 200 && code < 300;
 }
