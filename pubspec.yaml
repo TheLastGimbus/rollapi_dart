@@ -2,7 +2,7 @@ name: rollapi
 description: Dart library for Roll-API
 version: 1.2.1
 repository: https://github.com/TheLastGimbus/rollapi_dart
-homepage: https://roll.lastgimbus.com/
+homepage: https://the.lastgimbus.com/rollplay/
 issue_tracker: https://github.com/TheLastGimbus/rollapi_dart/issues
 
 executables:
@@ -12,8 +12,8 @@ environment:
   sdk: '>=2.12.0 <3.0.0'
 
 dependencies:
-  http: ^0.13.1
-  args: ^2.0.0
+  http: '>=0.12.0 <1.0.0'
+  args: '>=2.0.0 <3.0.0'
 
 dev_dependencies:
-  pedantic: ^1.9.0
+  lints: ^1.0.1
