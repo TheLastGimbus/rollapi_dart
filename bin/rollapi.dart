@@ -118,10 +118,10 @@ class PwdCommand extends Command {
       exit(69);
     }
     var chars = '';
-    chars += pwd['lower'] ? 'abcdefghijklmnopqrstuvwxyz' : '';
-    chars += pwd['upper'] ? 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' : '';
-    chars += pwd['numbers'] ? '0123456789' : '';
-    chars += pwd['special'] ? '!@#\$%^&*' : '';
+    chars += pwd['lower'] ? roll_pwd.lettersLowercase : '';
+    chars += pwd['upper'] ? roll_pwd.lettersUppercase : '';
+    chars += pwd['numbers'] ? roll_pwd.numbers : '';
+    chars += pwd['special'] ? roll_pwd.specialCharacters : '';
     logger.d('Generating random password...');
     final gen = await roll_pwd.getRandomPassword(
       client,

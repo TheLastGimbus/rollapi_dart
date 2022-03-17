@@ -9,6 +9,9 @@ const diceWalls = 6;
 const diceCharacters = '123456';
 
 const lettersLowercase = 'abcdefghijklmnopqrstuvwxyz';
+const lettersUppercase = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+const numbers = '0123456789';
+const specialCharacters = '!@#\$%^&*';
 
 /// Custom log of N-th level
 num logN(num x, num n) => log(x) / log(n);
