@@ -1,39 +1,54 @@
-/// This file contains enums etc to represent the state of the Request
+import 'exceptions.dart';
 
-/// State of the request.
-/// Whether it's already finished, or waiting in a queue, etc
-enum RequestState {
-  queued,
-  running,
-  expired,
-  finished,
-  failed,
+abstract class RollState {
+  final String uuid;
+
+  const RollState(this.uuid);
+
+  bool get isSuccess => this is RollStateFinished;
+
+  bool get isWaiting => this is RollStateQueued || this is RollStateRolling;
+
+  bool get isError =>
+      this is RollStateErrorExpired || this is RollStateErrorFailed;
 }
 
-/// List of states which represent that request failed
-const List<RequestState> requestErrorStates = [
-  RequestState.expired,
-  RequestState.failed,
-];
+// Waiting classes
 
-/// List of states which represent that request is waiting
-const List<RequestState> requestWaitingStates = [
-  RequestState.running,
-  RequestState.queued,
-];
+abstract class RollStateWaiting extends RollState {
+  final DateTime? eta;
 
-// Private map for to/from string conversion
-const Map<RequestState, String> _stateMap = {
-  RequestState.queued: 'QUEUED',
-  RequestState.running: 'RUNNING',
-  RequestState.expired: 'EXPIRED',
-  RequestState.finished: 'FINISHED',
-  RequestState.failed: 'FAILED',
-};
+  const RollStateWaiting(String uuid, [this.eta]) : super(uuid);
+}
 
-RequestState requestStateFromName(String string) =>
-    _stateMap.keys.firstWhere((e) => _stateMap[e] == string);
+class RollStateQueued extends RollStateWaiting {
+  const RollStateQueued(String uuid, [DateTime? eta]) : super(uuid, eta);
+}
 
-extension on RequestState {
-  String toName() => _stateMap[this]!;
+class RollStateRolling extends RollStateWaiting {
+  const RollStateRolling(String uuid, [DateTime? eta]) : super(uuid, eta);
+}
+
+// Error classes
+
+abstract class RollStateError extends RollState {
+  const RollStateError(String uuid) : super(uuid);
+}
+
+class RollStateErrorExpired extends RollStateError {
+  const RollStateErrorExpired(String uuid) : super(uuid);
+}
+
+class RollStateErrorFailed extends RollStateError {
+  final RollApiException exception;
+
+  const RollStateErrorFailed(String uuid, this.exception) : super(uuid);
+}
+
+// Success
+
+class RollStateFinished extends RollState {
+  final int number;
+
+  const RollStateFinished(String uuid, this.number) : super(uuid);
 }
