@@ -1,0 +1,23 @@
+name: Compile and test
+
+on:
+  push:
+    branches: [ master, dev ]
+  pull_request:
+    branches: [ master, dev ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      # Note: This workflow uses the latest stable version of the Dart SDK.
+      - uses: dart-lang/setup-dart@v1
+      - run: dart pub get
+      - run: dart test
+      - run: dart compile exe bin/rollapi.dart -o ubuntu-master-rollapi.exe
+      - name: Add binary as artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: ubuntu-master-rollapi.exe
+          path: ubuntu-master-rollapi.exe
