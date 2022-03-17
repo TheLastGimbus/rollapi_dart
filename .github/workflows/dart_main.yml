@@ -13,6 +13,8 @@ jobs:
       - uses: actions/checkout@v2
       # Note: This workflow uses the latest stable version of the Dart SDK.
       - uses: dart-lang/setup-dart@v1
+        with:
+          sdk: "2.16.1"
       - run: dart pub get
       - run: dart test
       - run: dart compile exe bin/rollapi.dart -o ubuntu-master-rollapi.exe
