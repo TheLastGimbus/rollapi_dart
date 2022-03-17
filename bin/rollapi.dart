@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:args/command_runner.dart';
 import 'package:rollapi/rollapi.dart';
 
+import 'src/logging.dart';
 import 'src/password.dart' as roll_pwd;
 
 late final RollApiClient client;
@@ -34,9 +35,19 @@ void main(List<String> arguments) async {
           'Decreasing it below 200 usually doesn\'t help much, '
           'and can get you in trouble with rate limit.',
       defaultsTo: '200',
+    )
+    ..addFlag(
+      'quiet',
+      defaultsTo: false,
+      help: 'Keeps output to bare minimum of result, '
+          'so it\'s suitable for scripts. The output can still be messy '
+          '(exception message for example) if exit code != 0 '
+          'so keep that in mind.',
     );
 
   final args = runner.parse(arguments);
+
+  initLogger(args['quiet']);
 
   client = RollApiClient(
     baseUrl: args['url'],
@@ -85,19 +96,25 @@ class PwdCommand extends Command {
       defaultsTo: false,
       negatable: true,
     );
+    argParser.addFlag(
+      'failOnIncomplete',
+      help: 'Exit with error code if password is not complete',
+      defaultsTo: true,
+      negatable: true,
+    );
   }
 
   @override
   void run() async {
     final pwd = argResults!;
     final length = int.parse(pwd['length']);
-    if (length < 0) print('Here you go, 0-length password: ');
+    if (length < 0) logger.v('Here you go, 0-length password: ');
     if (length > 12) {
-      print("Trust me, you *DON'T* want to wait for this");
-      print('If you really want *that long* password, split it in half');
+      logger.v("Trust me, you *DON'T* want to wait for this");
+      logger.v('If you really want *that long* password, split it in half');
     }
     if (length > 18) {
-      print("Above 18??? Oh no no no sorry you can't make *THAT LONG*");
+      logger.e("Above 18??? Oh no no no sorry you can't make *THAT LONG*");
       exit(69);
     }
     var chars = '';
@@ -105,13 +122,21 @@ class PwdCommand extends Command {
     chars += pwd['upper'] ? 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' : '';
     chars += pwd['numbers'] ? '0123456789' : '';
     chars += pwd['special'] ? '!@#\$%^&*' : '';
-    print('Generating random password...');
+    logger.d('Generating random password...');
     final gen = await roll_pwd.getRandomPassword(
       client,
       length: length,
       possibleChars: chars,
     );
-    print('DONE! Your password: $gen');
+
+    if (gen.length < length) {
+      logger.v("Couldn't finish your password, but here you go, "
+          '${gen.length}/$length characters: ');
+    } else {
+      logger.d('DONE! Your password: ');
+    }
+    logger.i(gen);
+    if (gen.length < length) exit(3);
   }
 }
 
@@ -124,7 +149,7 @@ class RollCommand extends Command {
 
   @override
   void run() async {
-    print('Rolling the dice...');
-    print(await client.getRandomNumber());
+    logger.d('Rolling the dice...');
+    logger.i(await client.getRandomNumber());
   }
 }

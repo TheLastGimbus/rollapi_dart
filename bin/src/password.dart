@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:rollapi/rollapi.dart';
 
 import 'base.dart' as based;
+import 'logging.dart';
 
 const diceWalls = 6;
 const diceCharacters = '123456';
@@ -37,25 +38,25 @@ Future<String> getRandomPassword(RollApiClient client, {
 
   var diceString = '';
   for (var i = 0; i < times; i++) {
-    print('${(i / times * 100).round()}%');
+    logger.d('${(i / times * 100).round()}%');
     try {
       diceString += (await client.getRandomNumber()).toString();
     } on RollApiRateLimitException catch (e) {
-      print(e);
+      logger.d(e);
       if (e.limitReset != null) {
-        print('Waiting until: ${e.limitReset}...');
+        logger.d('Waiting until: ${e.limitReset}...');
         await Future.delayed(e.limitReset!.difference(DateTime.now()));
       } else {
-        print('Waiting 30 seconds...');
+        logger.d('Waiting 30 seconds...');
         await Future.delayed(Duration(seconds: 30));
       }
       i--;
       continue;
     } on RollApiUnavailableException catch (e) {
-      print(e);
+      logger.d(e);
       break;
     } on RollApiException catch (e) {
-      print(e);
+      logger.d(e);
       failures++;
       if (failures > maxFailures) break;
       i--;
@@ -67,10 +68,6 @@ Future<String> getRandomPassword(RollApiClient client, {
 
   if (pass.length > length) {
     return pass.substring(0, length);
-  }
-  if (pass.length < length) {
-    print("Couldn't finish your password, but here you go, "
-        '${pass.length}/$length characters');
   }
   return pass;
 }
