@@ -23,13 +23,26 @@ void main(List<String> arguments) async {
       defaultsTo: 'https://roll.lastgimbus.com/api/',
     )
     ..addOption(
-      'pwd',
+      'password',
+      abbr: 'p',
       help: 'API password for things like skipping rate limit',
+    )
+    ..addOption(
+      'pingFrequency',
+      abbr: 'f',
+      help: 'Minimum ping frequency in milliseconds. '
+          'Decreasing it below 200 usually doesn\'t help much, '
+          'and can get you in trouble with rate limit.',
+      defaultsTo: '200',
     );
 
   final args = runner.parse(arguments);
 
-  client = RollApiClient(baseUrl: args['url'], password: args['pwd']);
+  client = RollApiClient(
+    baseUrl: args['url'],
+    password: args['password'],
+    minPingFrequency: Duration(milliseconds: int.parse(args['pingFrequency'])),
+  );
 
   await runner.run(arguments);
 }
