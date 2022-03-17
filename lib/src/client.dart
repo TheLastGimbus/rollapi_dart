@@ -99,7 +99,8 @@ class RollApiClient {
       final num delayMs = etaDateTime(epoch)
           .difference(DateTime.now())
           .inMilliseconds
-          .clamp(0, minPingFrequency.inMilliseconds);
+          // If we don't know eta yet (probably first time), you can spam
+          .clamp(json['eta'] == null ? 0 : 50, minPingFrequency.inMilliseconds);
       await Future.delayed(Duration(milliseconds: delayMs.toInt()));
 
       final infoRes = await http.get(infoUrl, headers: headers);
