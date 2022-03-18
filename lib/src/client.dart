@@ -187,6 +187,24 @@ class RollApiClient {
   /// Url to request a roll
   Uri getRollUrl() => baseUrl.resolve('roll/');
 
+  /// Download image of a roll
+  ///
+  /// Throws any of [RollApiException]s, or [http.ClientException]s
+  Future<Uint8List> getImageBytes(String uuid) async {
+    final res = await httpClient.get(getImageUrl(uuid), headers: headers);
+    if (!res.isOk) throw _exceptionFromResponse(res);
+    return res.bodyBytes;
+  }
+
+  /// Download image (after analysis pre-processing) of a roll
+  ///
+  /// Throws any of [RollApiException]s, or [http.ClientException]s
+  Future<Uint8List> getAnalImageBytes(String uuid) async {
+    final res = await httpClient.get(getAnalImageUrl(uuid), headers: headers);
+    if (!res.isOk) throw _exceptionFromResponse(res);
+    return res.bodyBytes;
+  }
+
   /// Closes HTTP client etc
   /// Do this when you're done with everything
   void close() async {
@@ -202,6 +220,8 @@ class RollApiClient {
               (num.parse(resetEp) * 1000).toInt())
           : null;
       return RollApiRateLimitException(url, res.body, reset);
+    } else if (res.statusCode == 410) {
+      return RollApiExpiredException(url, res.body);
     } else if (res.statusCode == 502) {
       return RollApiUnavailableException(url, res.body);
     } else if (res.statusCode >= 500 && res.statusCode < 600) {

@@ -12,6 +12,21 @@ class RollApiException implements Exception {
   String toString() => 'RollApiException on [$url]: : $message';
 }
 
+/// Content you're trying to reach is expired (or never existed at all)
+///
+/// Not that this will not be thrown in [RollApiClient.watchRoll()]
+class RollApiExpiredException implements RollApiException {
+  @override
+  final Uri url;
+  @override
+  final String? message;
+
+  RollApiExpiredException(this.url, [this.message]);
+
+  @override
+  String toString() => 'RollApiExpiredException on [$url]';
+}
+
 /// Rate limit was exceeded and you need to wait to make new requests
 class RollApiRateLimitException implements RollApiException {
   @override
