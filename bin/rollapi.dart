@@ -57,6 +57,7 @@ void main(List<String> arguments) async {
   );
 
   await runner.run(arguments);
+  client.close();
 }
 
 class PwdCommand extends Command {

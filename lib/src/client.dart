@@ -23,6 +23,9 @@ class RollApiClient {
   ///
   /// You can specify RollER instance with [baseUrl] (note that it will
   /// automatically add a trailing slash if not present)
+  ///
+  /// When you're done with everything and want to exit your code, remember to
+  /// call [close()]
   RollApiClient({
     Uri? baseUrl,
     this.password,
@@ -172,6 +175,12 @@ class RollApiClient {
           );
       }
     }
+  }
+
+  /// Closes HTTP client etc
+  /// Do this when you're done with everything
+  void close() async {
+    httpClient.close();
   }
 
   RollApiException _exceptionFromResponse(http.Response res) {
