@@ -36,8 +36,6 @@ Future<String> getRandomPassword(RollApiClient client, {
   // our X is number of walls on dice, Y is number of possible combinations, and
   // N will be the number of times we need to roll
   final times = logN(possibleCombinations, diceCharacters.length).ceil();
-  final maxFailures = length * 1;
-  var failures = 0;
 
   var diceString = '';
   for (var i = 0; i < times; i++) {
@@ -58,12 +56,6 @@ Future<String> getRandomPassword(RollApiClient client, {
     } on RollApiUnavailableException catch (e) {
       logger.d(e);
       break;
-    } on RollApiException catch (e) {
-      logger.d(e);
-      failures++;
-      if (failures > maxFailures) break;
-      i--;
-      continue;
     }
   }
   final dice2pass = based.AnyBase(diceCharacters, possibleChars);

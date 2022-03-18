@@ -70,8 +70,15 @@ class RollApiClient {
   /// Uses [roll()] and [rollStateStream()] under the hood
   ///
   /// Throws any of [RollApiException]s, or [http.ClientException]s
-  Future<int> getRandomNumber() async {
-    final req = watchRoll(await roll());
+  Future<int> getRandomNumber({
+    int maxRetries = 10, // Yes, it's higher than default of watchRoll()
+    Duration retryDelay = const Duration(seconds: 1),
+  }) async {
+    final req = watchRoll(
+      await roll(),
+      maxRetries: maxRetries,
+      retryDelay: retryDelay,
+    );
     final result = await req.last;
     if (result is RollStateFinished) {
       return result.number;
@@ -136,6 +143,8 @@ class RollApiClient {
         infoRes = await httpClient.get(infoUrl, headers: headers);
         if (!_httpIsOk(infoRes.statusCode)) {
           throw _exceptionFromResponse(infoRes);
+        } else {
+          errorCount = 0; // It went okay so we can reset this
         }
       } catch (e) {
         errorCount++;
