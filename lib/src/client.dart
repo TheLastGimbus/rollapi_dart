@@ -60,51 +60,6 @@ class RollApiClient {
     }
   }
 
-  /// <img src="https://raw.githubusercontent.com/TheLastGimbus/rollapi_dart/master/images/xkcd_221_random_number.png" alt="XKCD 221: Chosen by a fair dice roll, guaranteed to be random">
-  ///
-  /// This is *simplest possible* function, taken straight from XKCD 221,
-  /// for those who don't want to mess with stream of states.
-  ///
-  /// It either returns a number, or throws an Exception in the process. Simple.
-  ///
-  /// Uses [roll()] and [rollStateStream()] under the hood
-  ///
-  /// Throws any of [RollApiException]s, or [http.ClientException]s
-  Future<int> getRandomNumber({
-    int maxRetries = 10, // Yes, it's higher than default of watchRoll()
-    Duration retryDelay = const Duration(seconds: 1),
-  }) async {
-    final req = watchRoll(
-      await roll(),
-      maxRetries: maxRetries,
-      retryDelay: retryDelay,
-    );
-    final result = await req.last;
-    if (result is RollStateFinished) {
-      return result.number;
-    } else {
-      throw RollApiException(
-          getInfoUrl(result.uuid), 'Request failed :( try again');
-    }
-  }
-
-  // URL helper functions
-
-  /// Url of image of the dice
-  Uri getImageUrl(String uuid) => baseUrl.resolve('image/$uuid/');
-
-  /// Url of image after analysis pre-processing
-  Uri getAnalImageUrl(String uuid) => baseUrl.resolve('anal-image/$uuid/');
-
-  /// Url with info about the roll
-  Uri getInfoUrl(String uuid) => baseUrl.resolve('info/$uuid/');
-
-  /// Url with pure result of the roll
-  Uri getResultUrl(String uuid) => baseUrl.resolve('result/$uuid/');
-
-  /// Url to request a roll
-  Uri getRollUrl() => baseUrl.resolve('roll/');
-
   /// Keeps checking the state of the roll in a loop until it's finished
   ///
   /// If either HTTP or API fails, it retires [maxRetries] times. After that,
@@ -185,6 +140,51 @@ class RollApiClient {
       }
     }
   }
+
+  /// <img src="https://raw.githubusercontent.com/TheLastGimbus/rollapi_dart/master/images/xkcd_221_random_number.png" alt="XKCD 221: Chosen by a fair dice roll, guaranteed to be random">
+  ///
+  /// This is *simplest possible* function, taken straight from XKCD 221,
+  /// for those who don't want to mess with stream of states.
+  ///
+  /// It either returns a number, or throws an Exception in the process. Simple.
+  ///
+  /// Uses [roll()] and [rollStateStream()] under the hood
+  ///
+  /// Throws any of [RollApiException]s, or [http.ClientException]s
+  Future<int> getRandomNumber({
+    int maxRetries = 10, // Yes, it's higher than default of watchRoll()
+    Duration retryDelay = const Duration(seconds: 1),
+  }) async {
+    final req = watchRoll(
+      await roll(),
+      maxRetries: maxRetries,
+      retryDelay: retryDelay,
+    );
+    final result = await req.last;
+    if (result is RollStateFinished) {
+      return result.number;
+    } else {
+      throw RollApiException(
+          getInfoUrl(result.uuid), 'Request failed :( try again');
+    }
+  }
+
+  // URL helper functions
+
+  /// Url of image of the dice
+  Uri getImageUrl(String uuid) => baseUrl.resolve('image/$uuid/');
+
+  /// Url of image after analysis pre-processing
+  Uri getAnalImageUrl(String uuid) => baseUrl.resolve('anal-image/$uuid/');
+
+  /// Url with info about the roll
+  Uri getInfoUrl(String uuid) => baseUrl.resolve('info/$uuid/');
+
+  /// Url with pure result of the roll
+  Uri getResultUrl(String uuid) => baseUrl.resolve('result/$uuid/');
+
+  /// Url to request a roll
+  Uri getRollUrl() => baseUrl.resolve('roll/');
 
   /// Closes HTTP client etc
   /// Do this when you're done with everything
