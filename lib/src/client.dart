@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:http/http.dart' as http;
 
@@ -48,7 +49,7 @@ class RollApiClient {
   Future<String> roll() async {
     final url = getRollUrl();
     final rollRes = await httpClient.get(url, headers: headers);
-    if (_httpIsOk(rollRes.statusCode)) {
+    if (rollRes.isOk) {
       if (_isValidUuid(rollRes.body)) {
         return rollRes.body;
       } else {
@@ -96,10 +97,10 @@ class RollApiClient {
       http.Response? infoRes;
       try {
         infoRes = await httpClient.get(infoUrl, headers: headers);
-        if (!_httpIsOk(infoRes.statusCode)) {
-          throw _exceptionFromResponse(infoRes);
-        } else {
+        if (infoRes.isOk) {
           errorCount = 0; // It went okay so we can reset this
+        } else {
+          throw _exceptionFromResponse(infoRes);
         }
       } catch (e) {
         errorCount++;
@@ -219,6 +220,8 @@ class RollApiClient {
     final regex = RegExp(pattern, caseSensitive: false, multiLine: false);
     return regex.hasMatch(uuidStr);
   }
+}
 
-  static bool _httpIsOk(int code) => code >= 200 && code < 300;
+extension _ClientExt on http.Response {
+  bool get isOk => statusCode >= 200 && statusCode < 300;
 }
