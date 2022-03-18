@@ -5,7 +5,6 @@
 ///
 /// Any helper functions like getting image of successful roll should be left
 /// to the client
-import 'exceptions.dart';
 
 abstract class RollState {
   /// UUID of the roll
@@ -27,6 +26,7 @@ abstract class RollState {
 
 // Waiting classes
 
+/// We are waiting for our roll to happen
 abstract class RollStateWaiting extends RollState {
   /// Eta when roll is expected to be finished
   final DateTime? eta;
@@ -55,6 +55,12 @@ class RollStateRolling extends RollStateWaiting {
 
 // Error classes
 
+/// Those states mean that something *with the roll* failed. E.g. it was either
+/// expired or failed internally
+///
+/// IT DOES NOT mean that API is unavailable or your internet doesn't work.
+/// It means that RollER was successfully reached, and told us something is bad
+/// with our roll
 abstract class RollStateError extends RollState {
   const RollStateError(String uuid) : super(uuid);
 
@@ -62,7 +68,7 @@ abstract class RollStateError extends RollState {
   String toString() => 'RollStateError($uuid)';
 }
 
-/// Roll expired (or never existed at all) - make a new one
+/// Roll expired (or never existed at all)
 class RollStateErrorExpired extends RollStateError {
   const RollStateErrorExpired(String uuid) : super(uuid);
 
@@ -70,19 +76,17 @@ class RollStateErrorExpired extends RollStateError {
   String toString() => 'RollStateErrorExpired($uuid)';
 }
 
-/// Roll failed - dice flipped bad or API unavailable or something
+/// Roll failed - dice flipped bad or something
 class RollStateErrorFailed extends RollStateError {
-  /// This exception can tell you if API is unavailable ([RollApiUnavailableException])
-  final RollApiException exception;
-
-  const RollStateErrorFailed(String uuid, this.exception) : super(uuid);
+  const RollStateErrorFailed(String uuid) : super(uuid);
 
   @override
-  String toString() => 'RollStateErrorFailed($uuid, $exception)';
+  String toString() => 'RollStateErrorFailed($uuid)';
 }
 
 // Success
 
+/// Roll was successfully finished, and here is the result
 class RollStateFinished extends RollState {
   /// Your precious random number
   final int number;

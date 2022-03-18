@@ -1,4 +1,7 @@
-/// Generic exception that something messed up with API
+/// Generic exception for API
+///
+/// All of those exception mean that something happened *with the API itself* -
+/// meaning, that all HTTP stuff went okay, it's just the RollER that messed up
 class RollApiException implements Exception {
   final Uri url;
   final String? message;

@@ -39,13 +39,15 @@ class RollApiClient {
   /// Headers that will be sent with every request. Currently just [password]
   Map<String, String> get headers => {if (password != null) 'pwd': password!};
 
-  /// Requests a roll and returns stream of [RollState]s of how's it going
-  Future<Stream<RollState>> roll() async {
+  /// Requests a roll and returns it's UUID
+  ///
+  /// Throws any of [RollApiException]s, or [http.ClientException]s
+  Future<String> roll() async {
     final url = getRollUrl();
     final rollRes = await httpClient.get(url, headers: headers);
     if (_httpIsOk(rollRes.statusCode)) {
       if (_isValidUuid(rollRes.body)) {
-        return _stateStream(rollRes.body);
+        return rollRes.body;
       } else {
         throw RollApiException(
             url, 'Invalid UUID! : ${rollRes.statusCode} : ${rollRes.body}');
@@ -62,18 +64,21 @@ class RollApiClient {
   ///
   /// It either returns a number, or throws an Exception in the process. Simple.
   ///
-  /// Uses [roll()] under the hood
+  /// Uses [roll()] and [rollStateStream()] under the hood
+  ///
+  /// Throws any of [RollApiException]s, or [http.ClientException]s
   Future<int> getRandomNumber() async {
-    final req = await roll();
+    final req = watchRoll(await roll());
     final result = await req.last;
     if (result is RollStateFinished) {
       return result.number;
-    } else if (result is RollStateErrorFailed) {
-      throw result.exception;
     } else {
-      throw RollApiException(baseUrl, 'Request failed :( try again');
+      throw RollApiException(
+          getInfoUrl(result.uuid), 'Request failed :( try again');
     }
   }
+
+  // URL helper functions
 
   /// Url of image of the dice
   Uri getImageUrl(String uuid) => baseUrl.resolve('image/$uuid/');
@@ -90,8 +95,17 @@ class RollApiClient {
   /// Url to request a roll
   Uri getRollUrl() => baseUrl.resolve('roll/');
 
-  /// Keeps checking the state of the roll until it's finished
-  Stream<RollState> _stateStream(String uuid) async* {
+  /// Keeps checking the state of the roll in a loop until it's finished
+  ///
+  /// If either HTTP or API fails, it retires [maxRetries] times. After that,
+  /// it re-throws last exception that caused this ; thus, it can throw either
+  /// [RollApiException] (meaning something went bad with *API itself*)
+  /// or [http.ClientException] (meaning something went bad with internet)
+  Stream<RollState> watchRoll(
+    String uuid, {
+    int maxRetries = 6,
+    Duration retryDelay = const Duration(seconds: 1),
+  }) async* {
     final infoUrl = getInfoUrl(uuid);
 
     // Helper function
@@ -114,14 +128,19 @@ class RollApiClient {
           .clamp(json['eta'] == null ? 0 : 50, minPingFrequency.inMilliseconds);
       await Future.delayed(Duration(milliseconds: delayMs.toInt()));
 
-      final infoRes = await httpClient.get(infoUrl, headers: headers);
-      if (!_httpIsOk(infoRes.statusCode)) {
+      http.Response? infoRes;
+      try {
+        infoRes = await httpClient.get(infoUrl, headers: headers);
+        if (!_httpIsOk(infoRes.statusCode)) {
+          throw _exceptionFromResponse(infoRes);
+        }
+      } catch (e) {
+        errorCount++;
         if (errorCount < maxTries) {
-          errorCount++;
+          await Future.delayed(retryDelay);
           continue;
         } else {
-          yield RollStateErrorFailed(uuid, _exceptionFromResponse(infoRes));
-          return;
+          rethrow;
         }
       }
       // At this point we know it was 200, so we can safely parse the body:
@@ -143,22 +162,14 @@ class RollApiClient {
           yield RollStateFinished(uuid, json['result']! as int);
           return;
         case 'FAILED':
-          yield RollStateErrorFailed(
-            uuid,
-            RollApiException(
-                infoUrl, '${infoRes.statusCode} : ${infoRes.body}'),
-          );
+          yield RollStateErrorFailed(uuid);
           return;
         default:
-          yield RollStateErrorFailed(
-            uuid,
-            RollApiException(
-              infoUrl,
-              'Unimplemented request state "${json['status']}". This should never happen. '
-              'Tell @TheLastGimbus that he broke something',
-            ),
+          throw RollApiException(
+            infoUrl,
+            'Unimplemented request state [$json]. This should never happen. '
+            'Tell @TheLastGimbus that he broke something',
           );
-          return;
       }
     }
   }
