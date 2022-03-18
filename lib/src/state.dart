@@ -22,6 +22,14 @@ abstract class RollState {
   // Actually, I don't know if adding those to abstract classes makes sense :D
   @override
   String toString() => 'RollState($uuid)';
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other is RollState &&
+            runtimeType == other.runtimeType &&
+            uuid == other.uuid);
+  }
 }
 
 // Waiting classes
@@ -35,6 +43,15 @@ abstract class RollStateWaiting extends RollState {
 
   @override
   String toString() => 'RollStateWaiting($uuid, $eta)';
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other is RollStateWaiting &&
+            runtimeType == other.runtimeType &&
+            uuid == other.uuid &&
+            eta == other.eta);
+  }
 }
 
 /// Roll is waiting for it's roll in the queue
@@ -95,4 +112,13 @@ class RollStateFinished extends RollState {
 
   @override
   String toString() => 'RollStateFinished($uuid, $number)';
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other is RollStateFinished &&
+            runtimeType == other.runtimeType &&
+            uuid == other.uuid &&
+            number == other.number);
+  }
 }

@@ -1,7 +1,7 @@
 import 'package:test/test.dart';
 
-import '../bin/src/base.dart' as based;
-import '../bin/src/password.dart' as pwd;
+import '../../bin/src/base.dart' as based;
+import '../../bin/src/password.dart' as pwd;
 
 void main() {
   test('test_base', () {
