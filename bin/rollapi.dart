@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:args/command_runner.dart';
 import 'package:rollapi/rollapi.dart';
+import 'package:http/http.dart' as http;
 
 import 'src/logging.dart';
 import 'src/password.dart' as roll_pwd;
@@ -50,7 +51,7 @@ void main(List<String> arguments) async {
   initLogger(args['quiet']);
 
   client = RollApiClient(
-    baseUrl: args['url'],
+    baseUrl: Uri.parse(args['url']),
     password: args['password'],
     minPingFrequency: Duration(milliseconds: int.parse(args['pingFrequency'])),
   );

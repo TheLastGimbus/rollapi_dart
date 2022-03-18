@@ -6,6 +6,9 @@ import 'exceptions.dart';
 import 'state.dart';
 
 class RollApiClient {
+  /// Http client used for all requests
+  final http.Client httpClient;
+
   /// Base URL for API - you can change this to your own instance
   final Uri baseUrl;
 
@@ -16,22 +19,30 @@ class RollApiClient {
   /// cause you might get rate-limited
   final Duration minPingFrequency;
 
+  /// Client for RollAPI
+  ///
+  /// You can specify RollER instance with [baseUrl] (note that it will
+  /// automatically add a trailing slash if not present)
   RollApiClient({
-    /// Base URL for API - you can change this to your own instance
-    ///
-    /// Note that it will automatically add a trailing slash if not present
-    String baseUrl = 'https://roll.lastgimbus.com/api/',
+    Uri? baseUrl,
     this.password,
     this.minPingFrequency = const Duration(seconds: 10),
-  }) : baseUrl = Uri.parse(baseUrl.endsWith('/') ? baseUrl : '$baseUrl/');
+    http.Client? httpClient,
+  })  : baseUrl = baseUrl != null
+            // Ensure leading /
+            ? baseUrl.toString().endsWith('/')
+                ? baseUrl
+                : Uri.parse('$baseUrl/')
+            : Uri.parse('https://roll.lastgimbus.com/api/'),
+        httpClient = httpClient ?? http.Client();
 
   /// Headers that will be sent with every request. Currently just [password]
-  Map<String, String> get headers => password != null ? {'pwd': password!} : {};
+  Map<String, String> get headers => {if (password != null) 'pwd': password!};
 
   /// Requests a roll and returns stream of [RollState]s of how's it going
   Future<Stream<RollState>> roll() async {
     final url = getRollUrl();
-    final rollRes = await http.get(url, headers: headers);
+    final rollRes = await httpClient.get(url, headers: headers);
     if (_httpIsOk(rollRes.statusCode)) {
       if (_isValidUuid(rollRes.body)) {
         return _stateStream(rollRes.body);
@@ -46,7 +57,7 @@ class RollApiClient {
 
   /// <img src="https://raw.githubusercontent.com/TheLastGimbus/rollapi_dart/master/images/xkcd_221_random_number.png" alt="XKCD 221: Chosen by a fair dice roll, guaranteed to be random">
   ///
-  /// This is *simplest possible* helper function, taken straight from XKCD 221,
+  /// This is *simplest possible* function, taken straight from XKCD 221,
   /// for those who don't want to mess with stream of states.
   ///
   /// It either returns a number, or throws an Exception in the process. Simple.
@@ -103,7 +114,7 @@ class RollApiClient {
           .clamp(json['eta'] == null ? 0 : 50, minPingFrequency.inMilliseconds);
       await Future.delayed(Duration(milliseconds: delayMs.toInt()));
 
-      final infoRes = await http.get(infoUrl, headers: headers);
+      final infoRes = await httpClient.get(infoUrl, headers: headers);
       if (!_httpIsOk(infoRes.statusCode)) {
         if (errorCount < maxTries) {
           errorCount++;
