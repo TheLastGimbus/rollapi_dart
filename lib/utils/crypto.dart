@@ -16,7 +16,13 @@ class PasswordConverter {
   PasswordConverter({
     this.length = 6,
     this.possibleCharacters = lettersLowercase,
-  }) : _dice2pass = AnyBase(diceNumbers, possibleCharacters);
+  }) : _dice2pass = AnyBase(diceNumbers, possibleCharacters) {
+    if (length < 1) throw ArgumentError('Length must be greater than 0');
+    if (possibleCharacters.isEmpty) {
+      throw ArgumentError(
+          'Possible characters must be at least 1 character long');
+    }
+  }
 
   static const diceNumbers = '123456';
   static const lettersLowercase = 'abcdefghijklmnopqrstuvwxyz';
