@@ -7,6 +7,7 @@ import 'package:rollapi/utils/crypto.dart';
 import 'src/logging.dart';
 
 late final RollApiClient client;
+int exitCode = 0;
 
 void main(List<String> arguments) async {
   final runner = CommandRunner(
@@ -57,6 +58,7 @@ void main(List<String> arguments) async {
 
   await runner.run(arguments);
   client.close();
+  exit(exitCode);
 }
 
 class PwdCommand extends Command {
@@ -108,27 +110,29 @@ class PwdCommand extends Command {
   @override
   void run() async {
     final args = argResults!;
-    final length = int.parse(args['length']);
-    var chars = '';
-    chars += args['lower'] ? PasswordConverter.lettersLowercase : '';
-    chars += args['upper'] ? PasswordConverter.lettersUppercase : '';
-    chars += args['numbers'] ? PasswordConverter.numbers : '';
-    chars += args['special'] ? PasswordConverter.specialCharacters : '';
     logger.d('Generating random password...');
 
-    final converter =
-        PasswordConverter(length: length, possibleCharacters: chars);
+    final length = int.parse(args['length']);
+    final converter = PasswordConverter(
+      length: length,
+      possibleCharacters: [
+        if (args['lower']) PasswordConverter.lettersLowercase,
+        if (args['upper']) PasswordConverter.lettersUppercase,
+        if (args['numbers']) PasswordConverter.numbers,
+        if (args['special']) PasswordConverter.specialCharacters,
+      ].join(''),
+    );
+
     final times = converter.requiredRolls;
-
     logger.d('Need to roll $times times');
-
     if (times > 50) {
       logger.v("Trust me, you *DON'T* want to wait for this");
       logger.v('If you really want *that long* password, split it in half');
     }
     if (times > 100) {
       logger.e("Above 100??? Oh no no no sorry you can't make *THAT LONG*");
-      exit(69);
+      exitCode = 69;
+      return;
     }
 
     final rolls = <int>[];
@@ -138,13 +142,11 @@ class PwdCommand extends Command {
         rolls.add(await client.getRandomNumber());
       } on RollApiRateLimitException catch (e) {
         logger.d(e);
-        if (e.limitReset != null) {
-          logger.d('Waiting until: ${e.limitReset}...');
-          await Future.delayed(e.limitReset!.difference(DateTime.now()));
-        } else {
-          logger.d('Waiting 30 seconds...');
-          await Future.delayed(Duration(seconds: 30));
-        }
+        final delay = e.limitReset != null
+            ? e.limitReset!.difference(DateTime.now())
+            : Duration(seconds: 30);
+        logger.d('Waiting until: ${DateTime.now().add(delay)}...');
+        await Future.delayed(delay);
         i--;
         continue;
       } on RollApiUnavailableException catch (e) {
@@ -156,16 +158,14 @@ class PwdCommand extends Command {
         continue;
       }
     }
-    final gen = converter.getPassword(rolls);
 
-    if (gen.length < length) {
-      logger.v("Couldn't finish your password, but here you go, "
-          '${gen.length}/$length characters: ');
-    } else {
-      logger.d('DONE! Your password: ');
-    }
+    final gen = converter.getPassword(rolls);
+    logger.v(gen.length < length
+        ? "Couldn't finish your password, but here you go, "
+            "${gen.length}/$length characters: "
+        : 'DONE! Your password: ');
     logger.i(gen);
-    if (gen.length < length) exit(3);
+    if (gen.length < length && args['failOnIncomplete']) exitCode = 3;
   }
 }
 
