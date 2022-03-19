@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:args/command_runner.dart';
 import 'package:rollapi/rollapi.dart';
+import 'package:rollapi/utils/crypto.dart';
 
 import 'src/logging.dart';
 import 'src/password.dart' as roll_pwd;
@@ -119,10 +120,10 @@ class PwdCommand extends Command {
       exit(69);
     }
     var chars = '';
-    chars += pwd['lower'] ? roll_pwd.lettersLowercase : '';
-    chars += pwd['upper'] ? roll_pwd.lettersUppercase : '';
-    chars += pwd['numbers'] ? roll_pwd.numbers : '';
-    chars += pwd['special'] ? roll_pwd.specialCharacters : '';
+    chars += pwd['lower'] ? PasswordConverter.lettersLowercase : '';
+    chars += pwd['upper'] ? PasswordConverter.lettersUppercase : '';
+    chars += pwd['numbers'] ? PasswordConverter.numbers : '';
+    chars += pwd['special'] ? PasswordConverter.specialCharacters : '';
     logger.d('Generating random password...');
     final gen = await roll_pwd.getRandomPassword(
       client,

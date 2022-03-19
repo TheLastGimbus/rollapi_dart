@@ -15,6 +15,7 @@ dependencies:
   http: '>=0.12.0 <1.0.0'
   args: '>=2.0.0 <3.0.0'
   logger: '>=1.0.0 <2.0.0'
+  any_base: '>=2.0.0 <3.0.0'
 
 dev_dependencies:
   lints: ^1.0.1
