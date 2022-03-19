@@ -24,18 +24,30 @@ num logN(num x, num n) => log(x) / log(n);
 ///
 /// But don't be fooled! It may still throw you some network exceptions!
 /// Just on
-Future<String> getRandomPassword(RollApiClient client, {
+Future<String> getRandomPassword(
+  RollApiClient client, {
   int length = 8,
   String possibleChars = lettersLowercase,
 }) async {
-  // Get *all* possible combinations
-  final possibleCombinations = pow(possibleChars.length, length).toInt();
   // Number of times we need to roll the dice to get as many possibilities as
   // there are for our password
   // Definition of logarithm is "to what N we need to raise number X to get Y" -
   // our X is number of walls on dice, Y is number of possible combinations, and
   // N will be the number of times we need to roll
-  final times = logN(possibleCombinations, diceCharacters.length).ceil();
+  //
+  // BIG NOTE: Because Y would be very, very big
+  // (lower+upper+numbers+special=70 ^ (for example) 16 = very big nuber)
+  // - we would need to use BigInt or something (which wouldn't work with log())
+  //
+  // // DEPRECATED: Get *all* possible combinations:
+  // // final possibleCombinations = BigInt.from(possibleChars.length).pow(length);
+  //
+  // Luckily, I used [Photomath](https://photomath.com/) to optimize those two
+  // operations into one and here is what came out:
+  final times =
+      (length * logN(possibleChars.length, diceCharacters.length)).ceil();
+
+  logger.d('Need to roll $times times');
 
   var diceString = '';
   for (var i = 0; i < times; i++) {
@@ -56,6 +68,10 @@ Future<String> getRandomPassword(RollApiClient client, {
     } on RollApiUnavailableException catch (e) {
       logger.d(e);
       break;
+    } on RollApiException catch (e) {
+      logger.d(e);
+      i--;
+      continue;
     }
   }
   final dice2pass = based.AnyBase(diceCharacters, possibleChars);

@@ -2,7 +2,6 @@ import 'dart:io';
 
 import 'package:args/command_runner.dart';
 import 'package:rollapi/rollapi.dart';
-import 'package:http/http.dart' as http;
 
 import 'src/logging.dart';
 import 'src/password.dart' as roll_pwd;
