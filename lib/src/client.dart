@@ -205,6 +205,20 @@ class RollApiClient {
     return res.bodyBytes;
   }
 
+  /// Get status of RollER instance behind [baseUrl]
+  Future<RollerStatus> get rollerStatus async {
+    try {
+      final code = (await httpClient.get(baseUrl, headers: headers)).statusCode;
+      if (code >= 200 && code < 300) {
+        return RollerStatus.online;
+      } else {
+        return RollerStatus.offline;
+      }
+    } catch (e) {
+      return RollerStatus.unreachable;
+    }
+  }
+
   /// Closes HTTP client etc
   /// Do this when you're done with everything
   void close() async {
@@ -240,6 +254,19 @@ class RollApiClient {
     final regex = RegExp(pattern, caseSensitive: false, multiLine: false);
     return regex.hasMatch(uuidStr);
   }
+}
+
+/// Status of RollER instance
+enum RollerStatus {
+  /// Roller is not reachable because of internet stuff
+  unreachable,
+
+  /// Roller url is *technically* reachable, but didn't return 200-ish code,
+  /// meaning it may be in maitnance or something
+  offline,
+
+  /// Roller is online and returns a 200 <3
+  online,
 }
 
 extension _ClientExt on http.Response {
