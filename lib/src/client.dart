@@ -127,7 +127,11 @@ class RollApiClient {
           yield RollStateErrorExpired(uuid);
           return;
         case 'FINISHED':
-          yield RollStateFinished(uuid, json['result']! as int);
+          yield RollStateFinished(
+            uuid,
+            json['result']! as int,
+            json['ttl'] != null ? etaDateTime(json['ttl']! as num) : null,
+          );
           return;
         case 'FAILED':
           yield RollStateErrorFailed(uuid);

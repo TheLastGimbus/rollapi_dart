@@ -108,7 +108,10 @@ class RollStateFinished extends RollState {
   /// Your precious random number
   final int number;
 
-  const RollStateFinished(String uuid, this.number) : super(uuid);
+  /// Time To Live - when your roll will expire and won't be available
+  final DateTime? ttl;
+
+  const RollStateFinished(String uuid, this.number, [this.ttl]) : super(uuid);
 
   @override
   String toString() => 'RollStateFinished($uuid, $number)';
@@ -119,6 +122,7 @@ class RollStateFinished extends RollState {
         (other is RollStateFinished &&
             runtimeType == other.runtimeType &&
             uuid == other.uuid &&
-            number == other.number);
+            number == other.number &&
+            ttl == other.ttl);
   }
 }
